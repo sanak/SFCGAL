@@ -26,7 +26,7 @@
 namespace SFCGAL {
 class Geometry;
 template <int Dim> class GeometrySet;
-template <int Dim> class PrimitiveHandle;
+class PrimitiveBase;
 
 namespace algorithm {
 	/*
@@ -43,7 +43,7 @@ namespace algorithm {
 	void intersection( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b, GeometrySet<Dim>& );
 
 	template <int Dim>
-	void intersection( const PrimitiveHandle<Dim>& a, const PrimitiveHandle<Dim>& b, GeometrySet<Dim>& );
+	void intersection( const PrimitiveBase& a, const PrimitiveBase& b, GeometrySet<Dim>& );
     }
 }
 

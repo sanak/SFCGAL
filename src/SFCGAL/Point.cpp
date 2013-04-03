@@ -249,7 +249,7 @@ struct do_toPoint_d<3>
 };
 
 template <int Dim>
-typename TypeForDimension<Dim>::Point Point::toPoint_d() const
+typename Point_d<Dim>::Type Point::toPoint_d() const
 {
     return do_toPoint_d<Dim>::toPoint( this );
 }

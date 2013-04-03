@@ -34,14 +34,14 @@ namespace algorithm
 	//
 	// True if no points of pb is outside pa
 	template <int Dim>
-	bool covers( const PrimitiveHandle<Dim>& pa, const PrimitiveHandle<Dim>& pb )
+	bool _covers( const PrimitiveBase& pa, const PrimitiveBase& pb, const dim_t<Dim>& )
 	{
-		typedef typename TypeForDimension<Dim>::Point TPoint;
-		typedef typename TypeForDimension<Dim>::Segment TSegment;
-		typedef typename TypeForDimension<Dim>::Surface TSurface;
-		typedef typename TypeForDimension<Dim>::Volume TVolume;
+		typedef typename Point_d<Dim>::Type TPoint;
+		typedef typename Segment_d<Dim>::Type TSegment;
+		typedef typename Surface_d<Dim>::Type TSurface;
+		typedef typename Volume_d<Dim>::Type TVolume;
 
-		if ( pa.handle.which() < pb.handle.which() ) {
+		if ( pa.getType() < pb.getType() ) {
 			// no geometry can cover a geometry of greater dimension
 			return false;
 		}
@@ -52,12 +52,19 @@ namespace algorithm
 		ps.collectPoints( pb );
 		typename GeometrySet<Dim>::PointCollection& points = ps.points();
 		for ( typename GeometrySet<Dim>::PointCollection::const_iterator it = points.begin(); it != points.end(); ++it ) {
-			PrimitiveHandle<Dim> ppt( &it->primitive() );
-			if ( !algorithm::intersects( pa, ppt ) ) {
+			if ( !algorithm::intersects( pa, *it ) ) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	bool covers( const PrimitiveBase& pa, const PrimitiveBase& pb )
+	{
+		if ( pa.is3D() ) {
+			return _covers( pa, pb, dim_t<3>() );
+		}
+		return _covers( pa, pb, dim_t<2>() );
 	}
 
 	struct not_covered{};
@@ -80,7 +87,7 @@ namespace algorithm
 	template <int Dim>
 	bool covers( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b )
 	{
-		typename HandleCollection<Dim>::Type ahandles, bhandles;
+		HandleCollection ahandles, bhandles;
 		typename BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );
 		b.computeBoundingBoxes( bhandles, bboxes );
@@ -103,9 +110,6 @@ namespace algorithm
 
 	template bool covers<2>( const GeometrySet<2>& a, const GeometrySet<2>& b );
 	template bool covers<3>( const GeometrySet<3>& a, const GeometrySet<3>& b );
-
-	template bool covers<2>( const PrimitiveHandle<2>& a, const PrimitiveHandle<2>& b );
-	template bool covers<3>( const PrimitiveHandle<3>& a, const PrimitiveHandle<3>& b );
 
 	bool covers( const Geometry& ga, const Geometry& gb )
 	{

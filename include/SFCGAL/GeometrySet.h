@@ -41,6 +41,7 @@ namespace SFCGAL {
 
 	///
 	/// Primitive type enumeration.
+	/// The associated integer is the dimension of the primitive
 	enum PrimitiveType
 	{
 		PrimitivePoint,
@@ -50,31 +51,103 @@ namespace SFCGAL {
 	};
 
 	///
-	/// Primitive handle. Holds a pointer to a primitive, through the 'handle' member
-	template <int Dim>
-	struct PrimitiveHandle
+	/// Flags available for each type of Geometry type.
+	/// Primitives can be 'flagged' in order to speed up recomposition
+	enum ElementFlag
 	{
-		//
-		// We use boost::variant here for convenience, whereas it is needed
-		typedef boost::variant< const typename Point_d<Dim>::Type*,
-					const typename Segment_d<Dim>::Type*,
-					const typename Surface_d<Dim>::Type*,
-					const typename Volume_d<Dim>::Type* > Type;
-		Type handle;
-
-		template <class T>
-		PrimitiveHandle( const T* p ) : handle( p ) {}
-
-		template <class T>
-		inline const T* as() const { return boost::get<const T*>(handle); }
+		// the polyhedron is planar => build a triangle or a polygon
+		FLAG_IS_PLANAR = 1
 	};
+
+	class PrimitiveBase
+	{
+	public:
+		virtual int getType() const = 0;
+		virtual bool is3D() const = 0;
+
+		template <class T>
+		const T& as() const {
+			return static_cast<const T&>( *this );
+		}
+		template <class T>
+		T& as() {
+			return static_cast<T&>( *this );
+		}
+	};
+
+	///
+	/// Primitive, a Primitive with flags
+	/// T : Point_d, Segment_d, Surface_d, Volume_d
+	template <class T>
+	class Primitive : public PrimitiveBase
+	{
+	public:
+		int flags() const { return _flags; }
+		void setFlags( int flags ) { _flags = flags; }
+
+		// constructor from T
+		Primitive() :  _flags(0) {}
+		Primitive( const T& p ) : _primitive(p), _flags(0) {}
+		Primitive( const T& p, int f ) : _primitive(p), _flags(f) {}
+
+		Primitive( const Primitive& other ) :
+			_primitive( other._primitive ),
+			_flags( other._flags )
+		{}
+		bool operator< ( const Primitive& other ) const {
+			return _primitive < other._primitive;
+		}
+
+		int getType() const {
+			return PrimitiveDimension<T>::value;
+		}
+
+		bool is3D() const {
+			return PrimitiveDimension<T>::is3D;
+		}
+
+		T& primitive() { return _primitive; }
+		const T& primitive() const { return _primitive; }
+		
+	private:
+		T _primitive;
+		int _flags;
+	};
+
+	template <int Dim>
+	struct PrimitivePoint_d
+	{
+		typedef Primitive<typename Point_d<Dim>::Type> Type;
+	};
+	template <int Dim>
+	struct PrimitiveSegment_d
+	{
+		typedef Primitive<typename Segment_d<Dim>::Type> Type;
+	};
+	template <int Dim>
+	struct PrimitiveSurface_d
+	{
+		typedef Primitive<typename Surface_d<Dim>::Type> Type;
+	};
+	template <int Dim>
+	struct PrimitiveVolume_d
+	{
+		typedef Primitive<typename Volume_d<Dim>::Type> Type;
+	};
+
+	template <class T>
+	std::ostream& operator<<( std::ostream& ostr, const Primitive<T>& p )
+	{
+		ostr << p.primitive() << " F:" << p.flags();
+		return ostr;
+	}
 
 	///
 	/// PrimitiveBox. Type used for CGAL::Box_intersection_d
 	template <int Dim>
 	struct PrimitiveBox
 	{
-		typedef CGAL::Box_intersection_d::Box_with_handle_d<double, Dim, PrimitiveHandle<Dim>*> Type;
+		typedef CGAL::Box_intersection_d::Box_with_handle_d<double, Dim, PrimitiveBase*> Type;
 	};
 
 
@@ -88,57 +161,7 @@ namespace SFCGAL {
 
 	///
 	/// HandleCollection. Used to store PrimitiveHandle
-	template <int Dim>
-	struct HandleCollection
-	{
-		typedef std::list<PrimitiveHandle<Dim> > Type;
-	};
-
-	///
-	/// Flags available for each type of Geometry type.
-	/// Primitives can be 'flagged' in order to speed up recomposition
-	enum ElementFlag
-	{
-		// the polyhedron is planar => build a triangle or a polygon
-		FLAG_IS_PLANAR = 1
-	};
-
-	///
-	/// CollectionElement, a Primitive with flags
-	/// Primitive : Point_d, Segment_d, Surface_d, Volume_d
-	template <class Primitive>
-	class CollectionElement
-	{
-	public:
-		int flags() const { return _flags; }
-		void setFlags( int flags ) { _flags = flags; }
-
-		Primitive& primitive() { return _primitive; }
-		const Primitive& primitive() const { return _primitive; }
-		
-		// constructor from Primitive
-		CollectionElement() : _flags(0) {}
-		CollectionElement( const Primitive& p ) : _primitive(p), _flags(0) {}
-		CollectionElement( const Primitive& p, int f ) : _primitive(p), _flags(f) {}
-
-		CollectionElement( const CollectionElement& other ) :
-			_primitive( other._primitive ),
-			_flags( other._flags )
-		{}
-		bool operator< ( const CollectionElement& other ) const {
-			return _primitive < other._primitive;
-		}
-	private:
-		Primitive _primitive;
-		int _flags;
-	};
-
-	template <class Primitive>
-	std::ostream& operator<<( std::ostream& ostr, const CollectionElement<Primitive>& p )
-	{
-		ostr << p.primitive() << " flags: " << p.flags();
-		return ostr;
-	}
+	typedef std::list<PrimitiveBase* > HandleCollection;
 
 	///
 	/// A GeometrySet represents a set of CGAL primitives.
@@ -150,11 +173,11 @@ namespace SFCGAL {
 	{
 	public:
 		// Points are stored in an ordered set
-		typedef std::set<CollectionElement<typename Point_d<Dim>::Type> > PointCollection;
+		typedef std::set<typename PrimitivePoint_d<Dim>::Type > PointCollection;
 		// Segments are stored in an ordered set
-		typedef std::set<CollectionElement<typename Segment_d<Dim>::Type> > SegmentCollection;
-		typedef std::list<CollectionElement<typename Surface_d<Dim>::Type> > SurfaceCollection;
-		typedef std::list<CollectionElement<typename Volume_d<Dim>::Type> > VolumeCollection;
+		typedef std::set<typename PrimitiveSegment_d<Dim>::Type > SegmentCollection;
+		typedef std::list<typename PrimitiveSurface_d<Dim>::Type > SurfaceCollection;
+		typedef std::list<typename PrimitiveVolume_d<Dim>::Type > VolumeCollection;
 
 		GeometrySet();
 
@@ -166,22 +189,22 @@ namespace SFCGAL {
 		/**
 		 * Construct a GeometrySet from a Point
 		 */
-		GeometrySet( const typename TypeForDimension<Dim>::Point& g, int flags = 0 );
+		GeometrySet( const typename PrimitivePoint_d<Dim>::Type& g );
 
 		/**
 		 * Construct a GeometrySet from a Segment
 		 */
-		GeometrySet( const typename TypeForDimension<Dim>::Segment& g, int flags = 0 );
+		GeometrySet( const typename PrimitiveSegment_d<Dim>::Type& g );
 
 		/**
 		 * Construct a GeometrySet from a Surface
 		 */
-		GeometrySet( const typename TypeForDimension<Dim>::Surface& g, int flags = 0 );
+		GeometrySet( const typename PrimitiveSurface_d<Dim>::Type& g );
 
 		/**
 		 * Construct a GeometrySet from a Volume
 		 */
-		GeometrySet( const typename TypeForDimension<Dim>::Volume& g, int flags = 0 );
+		GeometrySet( const typename PrimitiveVolume_d<Dim>::Type& g );
 
 		/**
 		 * Add a geometry by decomposing it into CGAL primitives
@@ -191,7 +214,7 @@ namespace SFCGAL {
 		/**
 		 * add a primitive from a PrimitiveHandle  to the set
 		 */
-		void addPrimitive( const PrimitiveHandle<Dim>& p );
+		void addPrimitive( const PrimitiveBase& p );
 
 		/**
 		 * add a primitive from a CGAL::Object to the set
@@ -202,7 +225,7 @@ namespace SFCGAL {
 		/**
 		 * add a point to the set
 		 */
-		void addPrimitive( const typename TypeForDimension<Dim>::Point& g, int flags = 0 );
+		void addPrimitive( const typename PrimitivePoint_d<Dim>::Type& g );
 		template <class IT>
 		void addPoints( IT ibegin, IT iend )
 		{
@@ -212,12 +235,12 @@ namespace SFCGAL {
 		/**
 		 * collect all points of b and add them to the point list
 		 */
-		void collectPoints( const PrimitiveHandle<Dim>& b );
+		void collectPoints( const PrimitiveBase& b );
 
 		/**
 		 * add a segment to the set
 		 */
-		void addPrimitive( const typename TypeForDimension<Dim>::Segment& g, int flags = 0 );
+		void addPrimitive( const typename PrimitiveSegment_d<Dim>::Type& g );
 		template <class IT>
 		void addSegments( IT ibegin, IT iend )
 		{
@@ -227,7 +250,7 @@ namespace SFCGAL {
 		/**
 		 * add a surface to the set
 		 */
-		void addPrimitive( const typename TypeForDimension<Dim>::Surface& g, int flags = 0 );
+		void addPrimitive( const typename PrimitiveSurface_d<Dim>::Type& g );
 		template <class IT>
 		void addSurfaces( IT ibegin, IT iend )
 		{
@@ -237,7 +260,7 @@ namespace SFCGAL {
 		/**
 		 * add a volume to the set
 		 */
-		void addPrimitive( const typename TypeForDimension<Dim>::Volume& g, int flags = 0 );
+		void addPrimitive( const typename PrimitiveVolume_d<Dim>::Type& g );
 		template <class IT>
 		void addVolumes( IT ibegin, IT iend )
 		{
@@ -247,7 +270,7 @@ namespace SFCGAL {
 		/**
 		 * Compute all bounding boxes and handles of the set
 		 */
-		void computeBoundingBoxes( typename HandleCollection<Dim>::Type& handles, typename BoxCollection<Dim>::Type& boxes ) const;
+		void computeBoundingBoxes( HandleCollection& handles, typename BoxCollection<Dim>::Type& boxes ) const;
 
 		inline PointCollection& points() { return _points; }
 		inline const PointCollection& points() const { return _points; }

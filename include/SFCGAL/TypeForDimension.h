@@ -134,37 +134,44 @@ namespace SFCGAL {
 	struct PrimitiveDimension
 	{
 		static const int value = 0;
+		static const bool is3D = false;
 	};
 
 	template <>
 	struct PrimitiveDimension<typename TypeForDimension<2>::Segment>
 	{
 		static const int value = 1;
+		static const bool is3D = false;
 	};
 	template <>
 	struct PrimitiveDimension<typename TypeForDimension<3>::Segment>
 	{
 		static const int value = 1;
+		static const bool is3D = true;
 	};
 	template <>
 	struct PrimitiveDimension<typename TypeForDimension<2>::Surface>
 	{
 		static const int value = 2;
+		static const bool is3D = false;
 	};
 	template <>
 	struct PrimitiveDimension<typename TypeForDimension<3>::Surface>
 	{
 		static const int value = 2;
+		static const bool is3D = true;
 	};
 	template <>
 	struct PrimitiveDimension<typename TypeForDimension<2>::Volume>
 	{
 		static const int value = 3;
+		static const bool is3D = false;
 	};
 	template <>
 	struct PrimitiveDimension<typename TypeForDimension<3>::Volume>
 	{
 		static const int value = 3;
+		static const bool is3D = true;
 	};
 
 	///

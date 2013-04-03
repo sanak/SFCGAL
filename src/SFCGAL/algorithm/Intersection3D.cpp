@@ -37,12 +37,12 @@
 namespace SFCGAL {
 namespace algorithm {
     
-	void _intersection_solid_segment( const PrimitiveHandle<3>& pa, const PrimitiveHandle<3>& pb, GeometrySet<3>& output )
+	void _intersection_solid_segment( const PrimitiveBase& pa, const PrimitiveBase& pb, GeometrySet<3>& output )
 	{
 		typedef CGAL::Polyhedral_mesh_domain_3<MarkedPolyhedron, Kernel> Mesh_domain;
 
-		const MarkedPolyhedron* ext_poly = pa.as<MarkedPolyhedron>();
-		const CGAL::Segment_3<Kernel>* segment = pb.as<CGAL::Segment_3<Kernel> >();
+		const MarkedPolyhedron* ext_poly = &pa.as<PrimitiveVolume_d<3>::Type>().primitive();
+		const CGAL::Segment_3<Kernel>* segment = &pb.as<PrimitiveSegment_d<3>::Type>().primitive();
 
 		MarkedPolyhedron *ext_poly_nc = const_cast<MarkedPolyhedron*>( ext_poly );
 		CGAL::Point_inside_polyhedron_3<MarkedPolyhedron, Kernel> is_in_ext( *ext_poly_nc );
@@ -201,7 +201,7 @@ namespace algorithm {
 			
 			if ( point_is_inside ) {
 				// we know it is a planar intersection
-				output.addPrimitive( *it, FLAG_IS_PLANAR );
+				output.addPrimitive( PrimitiveVolume_d<3>::Type(*it, FLAG_IS_PLANAR) );
 				return;
 			}
 		}
@@ -245,46 +245,46 @@ namespace algorithm {
 
 	//
 	// must be called with pa's dimension larger than pb's
-	void intersection( const PrimitiveHandle<3>& pa, const PrimitiveHandle<3>& pb,
+	void intersection( const PrimitiveBase& pa, const PrimitiveBase& pb,
 			   GeometrySet<3>& output, dim_t<3> )
 	{
 		// everything vs a point
-		if ( pb.handle.which() == PrimitivePoint ) {
+		if ( pb.getType() == PrimitivePoint ) {
 			if ( algorithm::intersects( pa, pb ) ) {
-				output.addPrimitive( *boost::get<const TypeForDimension<3>::Point*>( pb.handle ) );
+				output.addPrimitive( pb.as<PrimitivePoint_d<3>::Type>().primitive() );
 			}
 		}
-		else if ( pa.handle.which() == PrimitiveSegment && pb.handle.which() == PrimitiveSegment ) {
-			const CGAL::Segment_3<Kernel> *seg1 = pa.as<CGAL::Segment_3<Kernel> >();
-			const CGAL::Segment_3<Kernel> *seg2 = pb.as<CGAL::Segment_3<Kernel> >();
-			CGAL::Object interObj = CGAL::intersection( *seg1, *seg2 );
+		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitiveSegment ) {
+			const CGAL::Segment_3<Kernel>& seg1 = pa.as<PrimitiveSegment_d<3>::Type>().primitive();
+			const CGAL::Segment_3<Kernel>& seg2 = pb.as<PrimitiveSegment_d<3>::Type>().primitive();
+			CGAL::Object interObj = CGAL::intersection( seg1, seg2 );
 			output.addPrimitive( interObj );
 		}
-		else if ( pa.handle.which() == PrimitiveSurface ) {
-			const CGAL::Triangle_3<Kernel> *tri1 = pa.as<CGAL::Triangle_3<Kernel> >();
-			if ( pb.handle.which() == PrimitiveSegment ) {
-				const CGAL::Segment_3<Kernel> *seg2 = pb.as<CGAL::Segment_3<Kernel> >();
-				CGAL::Object interObj = CGAL::intersection( *tri1, *seg2 );
+		else if ( pa.getType() == PrimitiveSurface ) {
+			const CGAL::Triangle_3<Kernel>& tri1 = pa.as<PrimitiveSurface_d<3>::Type>().primitive();
+			if ( pb.getType() == PrimitiveSegment ) {
+				const CGAL::Segment_3<Kernel>& seg2 = pb.as<PrimitiveSegment_d<3>::Type>().primitive();
+				CGAL::Object interObj = CGAL::intersection( tri1, seg2 );
 				output.addPrimitive( interObj );
 			}
-			else if ( pb.handle.which() == PrimitiveSurface ) {
-				const CGAL::Triangle_3<Kernel> *tri2 = pb.as<CGAL::Triangle_3<Kernel> >();
-				CGAL::Object interObj = CGAL::intersection( *tri1, *tri2 );
+			else if ( pb.getType() == PrimitiveSurface ) {
+				const CGAL::Triangle_3<Kernel>& tri2 = pb.as<PrimitiveSurface_d<3>::Type>().primitive();
+				CGAL::Object interObj = CGAL::intersection( tri1, tri2 );
 				output.addPrimitive( interObj );
 			}
 		}
-		else if ( pa.handle.which() == PrimitiveVolume ) {
-			if ( pb.handle.which() == PrimitiveSegment ) {
+		else if ( pa.getType() == PrimitiveVolume ) {
+			if ( pb.getType() == PrimitiveSegment ) {
 				_intersection_solid_segment( pa, pb, output );
 			}
-			else if ( pb.handle.which() == PrimitiveSurface ) {
-				_intersection_solid_triangle( *pa.as<MarkedPolyhedron>(),
-							      *pb.as<CGAL::Triangle_3<Kernel> >(),
+			else if ( pb.getType() == PrimitiveSurface ) {
+				_intersection_solid_triangle( pa.as<PrimitiveVolume_d<3>::Type>().primitive(),
+							      pb.as<PrimitiveSurface_d<3>::Type>().primitive(),
 							      output );
 			}
-			else if ( pb.handle.which() == PrimitiveVolume ) {
-				_intersection_solid_solid(  *pa.as<MarkedPolyhedron>(),
-							    *pb.as<MarkedPolyhedron>(),
+			else if ( pb.getType() == PrimitiveVolume ) {
+				_intersection_solid_solid(  pa.as<PrimitiveVolume_d<3>::Type>().primitive(),
+							    pb.as<PrimitiveVolume_d<3>::Type>().primitive(),
 							    output );
 			}
 		}

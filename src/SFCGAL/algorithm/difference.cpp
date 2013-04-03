@@ -47,17 +47,17 @@ namespace algorithm
 	}
 
 	template <int Dim>
-	static void substract_from_segment( const PrimitiveHandle<Dim>& seg, const PrimitiveHandle<Dim>& prim, GeometrySet<Dim>& output )
+	static void substract_from_segment( const PrimitiveBase& seg, const PrimitiveBase& prim, GeometrySet<Dim>& output )
 	{
-		if ( prim.handle.which() == PrimitiveSegment ) {
-			const typename Segment_d<Dim>::Type* sega = seg.template as<typename Segment_d<Dim>::Type>();
-			const typename Segment_d<Dim>::Type* segb = prim.template as<typename Segment_d<Dim>::Type>();
-			typename Point_d<Dim>::Type pA( sega->source() );
-			typename Point_d<Dim>::Type pB( sega->target() );
-			typename Point_d<Dim>::Type pC( segb->source() );
-			typename Point_d<Dim>::Type pD( segb->target() );
-			Kernel::FT sC = point_position( *sega, pC );
-			Kernel::FT sD = point_position( *sega, pD );
+		if ( prim.getType() == PrimitiveSegment ) {
+			const typename Segment_d<Dim>::Type& sega = seg.template as<typename PrimitiveSegment_d<Dim>::Type>().primitive();
+			const typename Segment_d<Dim>::Type& segb = prim.template as<typename PrimitiveSegment_d<Dim>::Type>().primitive();
+			typename Point_d<Dim>::Type pA( sega.source() );
+			typename Point_d<Dim>::Type pB( sega.target() );
+			typename Point_d<Dim>::Type pC( segb.source() );
+			typename Point_d<Dim>::Type pD( segb.target() );
+			Kernel::FT sC = point_position( sega, pC );
+			Kernel::FT sD = point_position( sega, pD );
 			if ( sC > sD ) {
 				std::swap( sC, sD );
 				std::swap( pC, pD );
@@ -77,20 +77,19 @@ namespace algorithm
 
 	template <int Dim>
 	// pa and pb intersects
-	static void difference_primitive( const PrimitiveHandle<Dim>& pa, const PrimitiveHandle<Dim>& pb, GeometrySet<Dim>& output )
+	static void difference_primitive( const PrimitiveBase& pa, const PrimitiveBase& pb, GeometrySet<Dim>& output )
 	{
-		if ( pa.handle.which() == PrimitivePoint ) {
+		if ( pa.getType() == PrimitivePoint ) {
 			// difference = empty
 		}
-		else if ( pa.handle.which() == PrimitiveSegment ) {
+		else if ( pa.getType() == PrimitiveSegment ) {
 			GeometrySet<Dim> inter;
 			algorithm::intersection( pa, pb, inter );
 			if ( ! inter.segments().empty() ) {
 				for ( typename GeometrySet<Dim>::SegmentCollection::const_iterator it = inter.segments().begin();
 				      it != inter.segments().end();
 				      ++it ) {
-					PrimitiveHandle<Dim> p( &it->primitive() );
-					substract_from_segment( pa, p, output );
+					substract_from_segment( pa, *it, output );
 				}
 			}
 			else {
@@ -103,7 +102,7 @@ namespace algorithm
 	static void filter_self_intersection( const GeometrySet<Dim>& input, GeometrySet<Dim>& output )
 	{
 		{
-			typedef std::list< CollectionElement<typename Point_d<Dim>::Type> > PointList;
+			typedef std::list< typename PrimitivePoint_d<Dim>::Type > PointList;
 			PointList points;
 
 			std::copy( input.points().begin(), input.points().end(), std::back_inserter( points ) );
@@ -116,14 +115,11 @@ namespace algorithm
 						continue;
 					}
 					
-					PrimitiveHandle<Dim> pa1( &it->primitive() );
-					PrimitiveHandle<Dim> pa2( &it2->primitive() );
-
 					if ( CGAL::do_overlap( it->primitive().bbox(), it2->primitive().bbox() ) &&
-					     algorithm::intersects( pa1, pa2 ) ) {
+					     algorithm::intersects( *it, *it2 ) ) {
 						intersectsA = true;
 						GeometrySet<Dim> temp;
-						algorithm::intersection( pa1, pa2, temp );
+						algorithm::intersection( *it, *it2, temp );
 						std::copy( temp.points().begin(), temp.points().end(), std::back_inserter( points ) );
 						// erase it2
 						points.erase( it2 );
@@ -138,7 +134,7 @@ namespace algorithm
 			}
 		}
 		{
-			typedef std::list< CollectionElement<typename Segment_d<Dim>::Type> > SegmentList;
+			typedef std::list< typename PrimitiveSegment_d<Dim>::Type > SegmentList;
 			SegmentList segments;
 
 			std::copy( input.segments().begin(), input.segments().end(), std::back_inserter( segments ) );
@@ -151,14 +147,11 @@ namespace algorithm
 						continue;
 					}
 
-					PrimitiveHandle<Dim> pa1( &it->primitive() );
-					PrimitiveHandle<Dim> pa2( &it2->primitive() );
-
 					if ( CGAL::do_overlap( it->primitive().bbox(), it2->primitive().bbox() ) &&
-					     algorithm::intersects( pa1, pa2 ) ) {
+					     algorithm::intersects( *it, *it2 ) ) {
 						intersectsA = true;
 						GeometrySet<Dim> temp;
-						algorithm::intersection( pa1, pa2, temp );
+						algorithm::intersection( *it, *it2, temp );
 						std::copy( temp.segments().begin(), temp.segments().end(), std::back_inserter( segments ) );
 						// erase it2
 						segments.erase( it2 );
@@ -177,7 +170,7 @@ namespace algorithm
 	template <int Dim>
 	void difference( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b, GeometrySet<Dim>& output )
 	{
-		typename SFCGAL::HandleCollection<Dim>::Type ahandles, bhandles;
+		typename SFCGAL::HandleCollection ahandles, bhandles;
 		typename SFCGAL::BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );
 		b.computeBoundingBoxes( bhandles, bboxes );
@@ -187,8 +180,8 @@ namespace algorithm
 			GeometrySet<Dim> tempOut;
 			for ( size_t j = 0; j < bboxes.size(); ++j ) {
 				if ( CGAL::do_overlap(aboxes[i].bbox(), bboxes[j].bbox()) ) {
-					const PrimitiveHandle<Dim>* pa = aboxes[i].handle();
-					const PrimitiveHandle<Dim>* pb = bboxes[j].handle();
+					const PrimitiveBase* pa = aboxes[i].handle();
+					const PrimitiveBase* pb = bboxes[j].handle();
 					if ( algorithm::intersects( *pa, *pb ) ) {
 						intersectsA = true;
 

@@ -116,25 +116,25 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename TypeForDimension<Dim>::Point& g, int flags )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitivePoint_d<Dim>::Type& g )
 	{
 		addPrimitive( g );
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename TypeForDimension<Dim>::Segment& g, int flags )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitiveSegment_d<Dim>::Type& g )
 	{
 		addPrimitive( g );
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename TypeForDimension<Dim>::Surface& g, int flags )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitiveSurface_d<Dim>::Type& g )
 	{
 		addPrimitive( g );
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename TypeForDimension<Dim>::Volume& g, int flags )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitiveVolume_d<Dim>::Type& g )
 	{
 		addPrimitive( g );
 	}
@@ -146,21 +146,21 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::addPrimitive( const PrimitiveHandle<Dim>& p )
+	void GeometrySet<Dim>::addPrimitive( const PrimitiveBase& p )
 	{
-		switch ( p.handle.which() )
+		switch ( p.getType() )
 		{
 		case PrimitivePoint:
-			_points.insert( *boost::get<const typename TypeForDimension<Dim>::Point*>(p.handle) );
+			_points.insert( p.template as<typename PrimitivePoint_d<Dim>::Type>() );
 			break;
 		case PrimitiveSegment:
-			_segments.insert( *boost::get<const typename TypeForDimension<Dim>::Segment*>(p.handle) );
+			_segments.insert( p.template as<typename PrimitiveSegment_d<Dim>::Type>() );
 			break;
 		case PrimitiveSurface:
-			_surfaces.push_back( *boost::get<const typename TypeForDimension<Dim>::Surface*>(p.handle) );
+			_surfaces.push_back( p.template as<typename PrimitiveSurface_d<Dim>::Type>() );
 			break;
 		case PrimitiveVolume:
-			_volumes.push_back( *boost::get<const typename TypeForDimension<Dim>::Volume*>(p.handle) );
+			_volumes.push_back( p.template as<typename PrimitiveVolume_d<Dim>::Type>() );
 			break;
 		}
 	}
@@ -168,10 +168,10 @@ namespace SFCGAL {
 	template <>
 	void GeometrySet<3>::addPrimitive( const CGAL::Object& o, bool pointsAsRing )
 	{
-		typedef typename TypeForDimension<3>::Point TPoint;
-		typedef typename TypeForDimension<3>::Segment TSegment;
-		typedef typename TypeForDimension<3>::Surface TSurface;
-		typedef typename TypeForDimension<3>::Volume TVolume;
+		typedef typename Point_d<3>::Type TPoint;
+		typedef typename Segment_d<3>::Type TSegment;
+		typedef typename Surface_d<3>::Type TSurface;
+		typedef typename Volume_d<3>::Type TVolume;
 		if ( const TPoint * p = CGAL::object_cast<TPoint>( &o ) ) {
 			_points.insert( TPoint( *p ) );
 		}
@@ -205,10 +205,10 @@ namespace SFCGAL {
 	template <>
 	void GeometrySet<2>::addPrimitive( const CGAL::Object& o, bool pointsAsRing )
 	{
-		typedef typename TypeForDimension<2>::Point TPoint;
-		typedef typename TypeForDimension<2>::Segment TSegment;
-		typedef typename TypeForDimension<2>::Surface TSurface;
-		typedef typename TypeForDimension<2>::Volume TVolume;
+		typedef typename Point_d<2>::Type TPoint;
+		typedef typename Segment_d<2>::Type TSegment;
+		typedef typename Surface_d<2>::Type TSurface;
+		typedef typename Volume_d<2>::Type TVolume;
 		if ( const TPoint * p = CGAL::object_cast<TPoint>( &o ) ) {
 			_points.insert( TPoint( *p ) );
 		}
@@ -247,28 +247,27 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::addPrimitive( const typename TypeForDimension<Dim>::Point& p, int flags )
+	void GeometrySet<Dim>::addPrimitive( const typename PrimitivePoint_d<Dim>::Type& p )
 	{
-		_points.insert( CollectionElement<typename Point_d<Dim>::Type>(p, flags ) );
+		_points.insert( p );
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::addPrimitive( const typename TypeForDimension<Dim>::Segment& p, int flags )
+	void GeometrySet<Dim>::addPrimitive( const typename PrimitiveSegment_d<Dim>::Type& p )
 	{
-		_segments.insert( CollectionElement<typename Segment_d<Dim>::Type>(p, flags ) );
+		_segments.insert( p );
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::addPrimitive( const typename TypeForDimension<Dim>::Surface& p, int flags )
+	void GeometrySet<Dim>::addPrimitive( const typename PrimitiveSurface_d<Dim>::Type& p )
 	{
 		_surfaces.push_back( p );
-		_surfaces.back().setFlags( flags );
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::addPrimitive( const typename TypeForDimension<Dim>::Volume& p, int flags )
+	void GeometrySet<Dim>::addPrimitive( const typename PrimitiveVolume_d<Dim>::Type& p )
 	{
-		_volumes.push_back( typename GeometrySet<Dim>::VolumeCollection::value_type(p, flags) );
+		_volumes.push_back( p );
 	}
 
 	template <int Dim>
@@ -291,7 +290,7 @@ namespace SFCGAL {
 		case TYPE_LINESTRING: {
 			const LineString& ls = g.as<LineString>();
 			for ( size_t i = 0; i < ls.numPoints() - 1; ++i ) {
-				typename TypeForDimension<Dim>::Segment seg( ls.pointN(i).toPoint_d<Dim>(),
+				typename Segment_d<Dim>::Type seg( ls.pointN(i).toPoint_d<Dim>(),
 									     ls.pointN(i+1).toPoint_d<Dim>() );
 				_segments.insert( seg );
 			}
@@ -335,7 +334,7 @@ namespace SFCGAL {
 		return CGAL::Bbox_2();
 	}
 
-	CGAL::Bbox_3 compute_solid_bbox( const typename TypeForDimension<3>::Volume& vol, dim_t<3> )
+	CGAL::Bbox_3 compute_solid_bbox( const typename Volume_d<3>::Type& vol, dim_t<3> )
 	{
 		CGAL::Bbox_3 ret;
 		MarkedPolyhedron::Point_const_iterator pit;
@@ -346,28 +345,26 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::computeBoundingBoxes( typename HandleCollection<Dim>::Type& handles,
-					       typename BoxCollection<Dim>::Type& boxes ) const
+	void GeometrySet<Dim>::computeBoundingBoxes( HandleCollection& handles,
+						     typename BoxCollection<Dim>::Type& boxes ) const
 	{
 		boxes.clear();
 		for ( typename PointCollection::const_iterator it = _points.begin(); it != _points.end(); ++it ) {
-			const typename TypeForDimension<Dim>::Point* pt = &(it->primitive());
-			PrimitiveHandle<Dim> h( pt );
-			handles.push_back( h );
-			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), &handles.back() ) );
+			handles.push_back( (PrimitiveBase*)&*it );
+			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), handles.back() ) );
 		}
 		for ( typename SegmentCollection::const_iterator it = _segments.begin(); it != _segments.end(); ++it ) {
-			handles.push_back( PrimitiveHandle<Dim>( &(it->primitive()) ) );
-			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), &handles.back() ) );
+			handles.push_back( (PrimitiveBase*)&*it );
+			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), handles.back() ) );
 		}
 		for ( typename SurfaceCollection::const_iterator it = _surfaces.begin(); it != _surfaces.end(); ++it ) {
-			handles.push_back( PrimitiveHandle<Dim>( &(it->primitive()) ) );
-			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), &handles.back() ) );
+			handles.push_back( (PrimitiveBase*)&*it );
+			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), handles.back() ) );
 		}
 		for ( typename VolumeCollection::const_iterator it = _volumes.begin(); it != _volumes.end(); ++it ) {
-			handles.push_back( PrimitiveHandle<Dim>( &(it->primitive()) ) );
+			handles.push_back( (PrimitiveBase*)&*it );
 			boxes.push_back( typename PrimitiveBox<Dim>::Type( compute_solid_bbox( it->primitive(), dim_t<Dim>() ),
-									    &handles.back() ) );
+									   handles.back() ) );
 		}
 	}
 
@@ -378,7 +375,6 @@ namespace SFCGAL {
 	{
 		if ( points.empty() ) {
 			return;
-			//			rpoints.push_back( new Point() );
 		}
 		else {
 			for ( typename GeometrySet<Dim>::PointCollection::const_iterator it = points.begin();
@@ -396,14 +392,13 @@ namespace SFCGAL {
 				 dim_t<Dim> )
 	{
 		if ( segments.empty() ) {
-			//			lines.push_back( new LineString );
 			return;
 		}
 
 		// convert segments to linestring / multi linestring
 		LineString* ls = new LineString;
 		bool first = true;
-		typename TypeForDimension<Dim>::Segment lastSeg;
+		typename Segment_d<Dim>::Type lastSeg;
 		for ( typename GeometrySet<Dim>::SegmentCollection::const_iterator it = segments.begin();
 		      it != segments.end();
 		      ++it ) {
@@ -608,31 +603,30 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::collectPoints( const PrimitiveHandle<Dim>& pa )
+	void GeometrySet<Dim>::collectPoints( const PrimitiveBase& pa )
 	{
-		typedef typename TypeForDimension<Dim>::Point TPoint;
-		typedef typename TypeForDimension<Dim>::Segment TSegment;
-		typedef typename TypeForDimension<Dim>::Surface TSurface;
-		typedef typename TypeForDimension<Dim>::Volume TVolume;
+		typedef typename PrimitivePoint_d<Dim>::Type TPoint;
+		typedef typename PrimitiveSegment_d<Dim>::Type TSegment;
+		typedef typename PrimitiveSurface_d<Dim>::Type TSurface;
+		typedef typename PrimitiveVolume_d<Dim>::Type TVolume;
 
-		switch ( pa.handle.which() ) {
+		switch ( pa.getType() ) {
 		case PrimitivePoint: {
-			const TPoint *pt = boost::get<const TPoint*>( pa.handle );
-			_points.insert( *pt );
+			_points.insert( pa.as<TPoint>() );
 			break;
 		}
 		case PrimitiveSegment: {
-			const TSegment* seg = boost::get<const TSegment*>( pa.handle );
-			_points.insert( seg->source() );
-			_points.insert( seg->target() );
+			const TSegment& seg = pa.as<TSegment>();
+			_points.insert( seg.primitive().source() );
+			_points.insert( seg.primitive().target() );
 			break;
 		}
 		case PrimitiveSurface: {
-			_collect_points( *boost::get<const TSurface*>( pa.handle ), _points );
+			_collect_points( pa.as<TSurface>().primitive(), _points );
 			break;
 		}
 		case PrimitiveVolume: {
-			_collect_points( *boost::get<const TVolume*>( pa.handle ), _points );
+			_collect_points( pa.as<TVolume>().primitive(), _points );
 			break;
 		}
 		}
@@ -643,7 +637,7 @@ namespace SFCGAL {
 	{
 		for ( IT it = ibegin; it != iend; ++it ) {
 			GeometrySet<Dim> v1;
-			v1.addPrimitive( it->primitive() );
+			v1.addPrimitive( *it );
 			bool v1_covered = false;
 			for ( IT it2 = it; it2 != iend; ++it2 ) {
 				if ( it == it2 ) {
@@ -651,7 +645,7 @@ namespace SFCGAL {
 				}
 
 				GeometrySet<Dim> v2;
-				v2.addPrimitive( it2->primitive() );
+				v2.addPrimitive( *it2 );
 				if ( algorithm::covers( v2, v1 ) ) {
 					v1_covered = true;
 					break;
@@ -662,7 +656,7 @@ namespace SFCGAL {
 				// and not covered by another already inserted primitive
 				bool b = algorithm::covers( output, v1 );
 				if ( !b ) {
-					output.addPrimitive( it->primitive(), it->flags() );
+					output.addPrimitive( *it );
 				}
 			}
 		}
@@ -680,13 +674,13 @@ namespace SFCGAL {
 	std::ostream& operator<<( std::ostream& ostr, const GeometrySet<2>& g )
 	{
 		ostr << "points: ";
- 		std::ostream_iterator<CollectionElement<Point_d<2>::Type> > out_pt (ostr,", ");
+ 		std::ostream_iterator<PrimitivePoint_d<2>::Type > out_pt (ostr,", ");
 		std::copy( g.points().begin(), g.points().end(), out_pt );
 		ostr << std::endl << "segments: ";
-		std::ostream_iterator<CollectionElement<Segment_d<2>::Type> > out_seg (ostr,", ");
+		std::ostream_iterator<PrimitiveSegment_d<2>::Type > out_seg (ostr,", ");
 		std::copy( g.segments().begin(), g.segments().end(), out_seg );
 		ostr << std::endl << "surfaces: ";
-		std::ostream_iterator<CollectionElement<Surface_d<2>::Type> > out_surf (ostr,", ");
+		std::ostream_iterator<PrimitiveSurface_d<2>::Type > out_surf (ostr,", ");
 		std::copy( g.surfaces().begin(), g.surfaces().end(), out_surf );
 		ostr << std::endl;
 		return ostr;
@@ -695,16 +689,16 @@ namespace SFCGAL {
 	std::ostream& operator<<( std::ostream& ostr, const GeometrySet<3>& g )
 	{
 		ostr << "points: ";
- 		std::ostream_iterator<CollectionElement<Point_d<3>::Type> > out_pt (ostr,", ");
+ 		std::ostream_iterator<PrimitivePoint_d<3>::Type > out_pt (ostr,", ");
 		std::copy( g.points().begin(), g.points().end(), out_pt );
 		ostr << std::endl << "segments: ";
-		std::ostream_iterator<CollectionElement<Segment_d<3>::Type> > out_seg (ostr,", ");
+		std::ostream_iterator<PrimitiveSegment_d<3>::Type > out_seg (ostr,", ");
 		std::copy( g.segments().begin(), g.segments().end(), out_seg );
 		ostr << std::endl << "surfaces: ";
-		std::ostream_iterator<CollectionElement<Surface_d<3>::Type> > out_surf (ostr,", ");
+		std::ostream_iterator<PrimitiveSurface_d<3>::Type > out_surf (ostr,", ");
 		std::copy( g.surfaces().begin(), g.surfaces().end(), out_surf );
 		ostr << std::endl << "volumes: ";
-		std::ostream_iterator<CollectionElement<Volume_d<3>::Type> > out_vol (ostr,", ");
+		std::ostream_iterator<PrimitiveVolume_d<3>::Type > out_vol (ostr,", ");
 		std::copy( g.volumes().begin(), g.volumes().end(), out_vol );
 		ostr << std::endl;
 		return ostr;

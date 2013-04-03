@@ -34,18 +34,18 @@ namespace algorithm {
     
 	//
 	// must be called with pa's dimension larger than pb's
-	void intersection( const PrimitiveHandle<2>& pa, const PrimitiveHandle<2>& pb,
+	void intersection( const PrimitiveBase& pa, const PrimitiveBase& pb,
 			   GeometrySet<2>& output, dim_t<2> )
 	{
 		// everything vs a point
-		if ( pb.handle.which() == PrimitivePoint ) {
+		if ( pb.getType() == PrimitivePoint ) {
 			if ( algorithm::intersects( pa, pb ) ) {
-				output.addPrimitive( *pb.as<CGAL::Point_2<Kernel> >() );
+				output.addPrimitive( pb.as<PrimitivePoint_d<2>::Type>() );
 			}
 		}
-		else if ( pa.handle.which() == PrimitiveSurface && pb.handle.which() == PrimitiveSurface ) {
-			const CGAL::Polygon_with_holes_2<Kernel>* poly1 = pa.as<CGAL::Polygon_with_holes_2<Kernel> >();
-			const CGAL::Polygon_with_holes_2<Kernel>* poly2 = pb.as<CGAL::Polygon_with_holes_2<Kernel> >();
+		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSurface ) {
+			const CGAL::Polygon_with_holes_2<Kernel>* poly1 = &pa.as<PrimitiveSurface_d<2>::Type>().primitive();
+			const CGAL::Polygon_with_holes_2<Kernel>* poly2 = &pb.as<PrimitiveSurface_d<2>::Type>().primitive();
 
 			// shortcut for triangles
 			if ( poly1->holes_begin() == poly1->holes_end() &&
@@ -92,15 +92,15 @@ namespace algorithm {
 					    *poly2,
 					    std::back_inserter( output.surfaces() ) );
 		}
-		else if ( pa.handle.which() == PrimitiveSegment && pb.handle.which() == PrimitiveSegment ) {
-			const CGAL::Segment_2<Kernel> *seg1 = pa.as<CGAL::Segment_2<Kernel> >();
-			const CGAL::Segment_2<Kernel> *seg2 = pb.as<CGAL::Segment_2<Kernel> >();
+		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitiveSegment ) {
+			const CGAL::Segment_2<Kernel> *seg1 = &pa.as<PrimitiveSegment_d<2>::Type >().primitive();
+			const CGAL::Segment_2<Kernel> *seg2 = &pb.as<PrimitiveSegment_d<2>::Type >().primitive();
 			CGAL::Object interObj = CGAL::intersection( *seg1, *seg2 );
 			output.addPrimitive( interObj );
 		}
-		else if ( pa.handle.which() == PrimitiveSurface && pb.handle.which() == PrimitiveSegment ) {
-			const CGAL::Polygon_with_holes_2<Kernel> *poly = pa.as<CGAL::Polygon_with_holes_2<Kernel> >();
-			const CGAL::Segment_2<Kernel> *seg = pb.as<CGAL::Segment_2<Kernel> >();
+		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSegment ) {
+			const CGAL::Polygon_with_holes_2<Kernel> *poly = &pa.as<PrimitiveSurface_d<2>::Type>().primitive();
+			const CGAL::Segment_2<Kernel> *seg = &pb.as<PrimitiveSegment_d<2>::Type>().primitive();
 
 			// shortcut for triangle
 			if ( poly->holes_begin() == poly->holes_end() && poly->outer_boundary().size() == 3 ) {

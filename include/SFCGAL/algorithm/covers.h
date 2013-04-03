@@ -28,7 +28,7 @@ namespace SFCGAL {
 	class Solid;
 	class Point;
 	template <int Dim> class GeometrySet;
-	template <int Dim> class PrimitiveHandle;
+	class PrimitiveBase;
 
 	namespace algorithm {
 	/*
@@ -49,8 +49,7 @@ namespace SFCGAL {
 	template <int Dim>
 	bool covers( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b );
 
-	template <int Dim>
-	bool covers( const PrimitiveHandle<Dim>& a, const PrimitiveHandle<Dim>& b );
+	bool covers( const PrimitiveBase& a, const PrimitiveBase& b );
     }
 }
 
