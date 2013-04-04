@@ -34,7 +34,7 @@ namespace algorithm
 	//
 	// True if no points of pb is outside pa
 	template <int Dim>
-	bool _covers( const PrimitiveBase& pa, const PrimitiveBase& pb, const dim_t<Dim>& )
+	bool covers( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb )
 	{
 		typedef typename Point_d<Dim>::Type TPoint;
 		typedef typename Segment_d<Dim>::Type TSegment;
@@ -59,14 +59,6 @@ namespace algorithm
 		return true;
 	}
 
-	bool covers( const PrimitiveBase& pa, const PrimitiveBase& pb )
-	{
-		if ( pa.is3D() ) {
-			return _covers( pa, pb, dim_t<3>() );
-		}
-		return _covers( pa, pb, dim_t<2>() );
-	}
-
 	struct not_covered{};
 
 	template <int Dim>
@@ -87,7 +79,7 @@ namespace algorithm
 	template <int Dim>
 	bool covers( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b )
 	{
-		HandleCollection ahandles, bhandles;
+		typename HandleCollection<Dim>::Type ahandles, bhandles;
 		typename BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );
 		b.computeBoundingBoxes( bhandles, bboxes );

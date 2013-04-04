@@ -59,32 +59,38 @@ namespace SFCGAL {
 		FLAG_IS_PLANAR = 1
 	};
 
+	template <int Dim, class T> class Primitive;
 	///
-	/// Base class for Primitive. Store a flag
-	// TODO: getType => type() ?
-	// TODO: operator* ?
-	// TODO: bbox() ?
-	template <class T> class Primitive;
+	/// Base class for Primitive. Stores a flag
+	template <int Dim>
 	class PrimitiveBase
 	{
 	public:
 		PrimitiveBase() : _flags(0) {}
 		PrimitiveBase( int f ) : _flags(f) {}
 
+		///
+		/// get the primitive type ( point, segment, surface, volume )
 		virtual int getType() const = 0;
-		virtual bool is3D() const = 0;
 
 		int flags() const { return _flags; }
 		void setFlags( int flags ) { _flags = flags; }
 
+		///
+		/// Access to the primitive
+		/// Example usage: as<Point_d<2>::Type>()
 		template <class T>
 		const T& as() const {
-			return static_cast<const Primitive<T>* >( this )->primitive();
+			return static_cast<const Primitive<Dim, T>* >( this )->primitive();
 		}
 		template <class T>
 		T& as() {
-			return static_cast<Primitive<T>* >( this )->primitive();
-		}
+			return static_cast<Primitive<Dim, T>* >( this )->primitive();
+                }
+
+	        ///
+	        /// Compute the bounding box
+		virtual typename Bbox_d<Dim>::Type bbox() const = 0;
 	private:
 		int _flags;
 	};
@@ -92,14 +98,13 @@ namespace SFCGAL {
 	///
 	/// Primitive class
 	/// T : Point_d, Segment_d, Surface_d, Volume_d
-	template <class T>
-	class Primitive : public PrimitiveBase
+        template < int Dim, class T >
+	class Primitive : public PrimitiveBase<Dim>
 	{
 	public:
-		// constructor from T
-		Primitive() :  PrimitiveBase() {}
-		Primitive( const T& p ) : PrimitiveBase(), _primitive(p) {}
-		Primitive( const T& p, int f ) : PrimitiveBase(f), _primitive(p) {}
+		Primitive() :  PrimitiveBase<Dim>() {}
+		Primitive( const T& p ) : PrimitiveBase<Dim>(), _primitive(p) {}
+		Primitive( const T& p, int f ) : PrimitiveBase<Dim>(f), _primitive(p) {}
 
 		bool operator< ( const Primitive& other ) const {
 			return _primitive < other._primitive;
@@ -109,13 +114,12 @@ namespace SFCGAL {
 			return PrimitiveDimension<T>::value;
 		}
 
-		bool is3D() const {
-			return PrimitiveDimension<T>::is3D;
-		}
-
 		T& primitive() { return _primitive; }
 		const T& primitive() const { return _primitive; }
-		
+
+		typename Bbox_d<Dim>::Type bbox() const {
+			return computeBbox( *this );
+		}
 	private:
 		T _primitive;
 	};
@@ -123,39 +127,47 @@ namespace SFCGAL {
 	template <int Dim>
 	struct PrimitivePoint_d
 	{
-		typedef Primitive<typename Point_d<Dim>::Type> Type;
+		typedef Primitive<Dim, typename Point_d<Dim>::Type> Type;
 	};
 	template <int Dim>
 	struct PrimitiveSegment_d
 	{
-		typedef Primitive<typename Segment_d<Dim>::Type> Type;
+		typedef Primitive<Dim, typename Segment_d<Dim>::Type> Type;
 	};
 	template <int Dim>
 	struct PrimitiveSurface_d
 	{
-		typedef Primitive<typename Surface_d<Dim>::Type> Type;
+		typedef Primitive<Dim, typename Surface_d<Dim>::Type> Type;
 	};
 	template <int Dim>
 	struct PrimitiveVolume_d
 	{
-		typedef Primitive<typename Volume_d<Dim>::Type> Type;
+		typedef Primitive<Dim, typename Volume_d<Dim>::Type> Type;
 	};
 
-	template <class T>
-	std::ostream& operator<<( std::ostream& ostr, const Primitive<T>& p )
+        template <int Dim, class T>
+	std::ostream& operator<<( std::ostream& ostr, const Primitive<Dim, T>& p )
 	{
 		ostr << p.primitive() << " F:" << p.flags();
 		return ostr;
 	}
+
+        template <int Dim, class T>
+        typename Bbox_d<Dim>::Type computeBbox( const Primitive<Dim, T>& p )
+        {
+		return p.primitive().bbox();
+        }
+
+        Bbox_d<2>::Type computeBbox( const PrimitiveVolume_d<2>::Type& p );
+        Bbox_d<3>::Type computeBbox( const PrimitiveVolume_d<3>::Type& p );
 
 	///
 	/// PrimitiveBox. Type used for CGAL::Box_intersection_d
 	template <int Dim>
 	struct PrimitiveBox
 	{
-		typedef CGAL::Box_intersection_d::Box_with_handle_d<double, Dim, PrimitiveBase*> Type;
+		typedef CGAL::Box_intersection_d::Box_with_handle_d<double, Dim, const PrimitiveBase<Dim>*> Type;
 	};
-
 
 	///
 	/// BoxCollection for use with CGAL::Box_intersection_d
@@ -165,9 +177,24 @@ namespace SFCGAL {
 		typedef std::vector<typename PrimitiveBox<Dim>::Type> Type;
 	};
 
-	///
+        ///
 	/// HandleCollection. Used to store PrimitiveHandle
-	typedef std::list<PrimitiveBase* > HandleCollection;
+        template <int Dim>
+        struct HandleCollection
+	{
+		typedef std::list<const PrimitiveBase<Dim>* > Type;
+	};
+
+        ///
+        /// Used to choose between a regular iterator and a const_iterator (needed for GeometrySet<>::Iterator
+	template <class T, bool IsConst>
+	struct IteratorChooser {
+		typedef typename T::const_iterator Type;
+	};
+	template <class T>
+	struct IteratorChooser<T, false> {
+		typedef typename T::iterator Type;
+	};
 
 	///
 	/// A GeometrySet represents a set of CGAL primitives.
@@ -184,6 +211,45 @@ namespace SFCGAL {
 		typedef std::set<typename PrimitiveSegment_d<Dim>::Type > SegmentCollection;
 		typedef std::list<typename PrimitiveSurface_d<Dim>::Type > SurfaceCollection;
 		typedef std::list<typename PrimitiveVolume_d<Dim>::Type > VolumeCollection;
+
+		template <class T>
+		class IteratorBase : public boost::iterator_facade < IteratorBase<T>,
+								     T,
+								     boost::forward_traversal_tag >
+		{
+		public:
+			typedef typename IteratorChooser< PointCollection, boost::is_const<T>::value >::Type PointIterator;
+			typedef typename IteratorChooser< SegmentCollection, boost::is_const<T>::value >::Type SegmentIterator;
+			typedef typename IteratorChooser< SurfaceCollection, boost::is_const<T>::value >::Type SurfaceIterator;
+			typedef typename IteratorChooser< VolumeCollection, boost::is_const<T>::value >::Type VolumeIterator;
+
+			IteratorBase() {}
+			IteratorBase( PointIterator pit,
+				      PointIterator pend,
+				      SegmentIterator lit,
+				      SegmentIterator lend,
+				      SurfaceIterator sit,
+				      SurfaceIterator send,
+				      VolumeIterator vit,
+				      VolumeIterator vend );
+			
+			void increment();
+
+			bool equal( const IteratorBase<T>& other ) const;
+
+			T& dereference() const;
+
+		private:
+			PointIterator pointIt, pointEnd;
+			SegmentIterator segmentIt, segmentEnd;
+			SurfaceIterator surfaceIt, surfaceEnd;
+			VolumeIterator volumeIt, volumeEnd;
+
+			friend IteratorBase<T> GeometrySet<Dim>::insert( IteratorBase<T>, const T& );
+		};
+
+		typedef IteratorBase<const PrimitiveBase<Dim> > ConstIterator;
+		typedef IteratorBase<PrimitiveBase<Dim> >       Iterator;
 
 		GeometrySet();
 
@@ -220,7 +286,7 @@ namespace SFCGAL {
 		/**
 		 * add a primitive from a PrimitiveHandle  to the set
 		 */
-		void addPrimitive( const PrimitiveBase& p );
+		void addPrimitive( const PrimitiveBase<Dim>& p );
 
 		/**
 		 * add a primitive from a CGAL::Object to the set
@@ -241,7 +307,7 @@ namespace SFCGAL {
 		/**
 		 * collect all points of b and add them to the point list
 		 */
-		void collectPoints( const PrimitiveBase& b );
+		void collectPoints( const PrimitiveBase<Dim>& b );
 
 		/**
 		 * add a segment to the set
@@ -276,8 +342,7 @@ namespace SFCGAL {
 		/**
 		 * Compute all bounding boxes and handles of the set
 		 */
-		// TODO : add a iterator over points then segments, then ...
-		void computeBoundingBoxes( HandleCollection& handles, typename BoxCollection<Dim>::Type& boxes ) const;
+		void computeBoundingBoxes( typename HandleCollection<Dim>::Type& handles, typename BoxCollection<Dim>::Type& boxes ) const;
 
 		inline PointCollection& points() { return _points; }
 		inline const PointCollection& points() const { return _points; }
@@ -290,6 +355,23 @@ namespace SFCGAL {
 
 		inline VolumeCollection& volumes() { return _volumes; }
 		inline const VolumeCollection& volumes() const { return _volumes; }
+
+		///
+		/// Primitive iterator
+		/// the selection parameter is set to the proper PrimitiveType the caller wants to iterate over
+		/// -1 is passed to iterate over all the different kinds of primitives
+		ConstIterator primitives_begin( int selection = -1 ) const;
+		ConstIterator primitives_end() const;
+
+		Iterator primitives_begin( int selection = -1 );
+		Iterator primitives_end();
+
+		/**
+		 * STL-compliant insert
+		 * For use with std::inserter( gset, it )
+		 */
+		Iterator insert( Iterator it, const PrimitiveBase<Dim>& value );
+		ConstIterator insert( ConstIterator it, const PrimitiveBase<Dim>& value );
 
 		/**
 		 * convert the set to a SFCGAL::Geometry

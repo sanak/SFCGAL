@@ -37,7 +37,7 @@
 namespace SFCGAL {
 namespace algorithm {
     
-	void _intersection_solid_segment( const PrimitiveBase& pa, const PrimitiveBase& pb, GeometrySet<3>& output )
+	void _intersection_solid_segment( const PrimitiveBase<3>& pa, const PrimitiveBase<3>& pb, GeometrySet<3>& output )
 	{
 		typedef CGAL::Polyhedral_mesh_domain_3<MarkedPolyhedron, Kernel> Mesh_domain;
 
@@ -245,7 +245,7 @@ namespace algorithm {
 
 	//
 	// must be called with pa's dimension larger than pb's
-	void intersection( const PrimitiveBase& pa, const PrimitiveBase& pb,
+	void intersection( const PrimitiveBase<3>& pa, const PrimitiveBase<3>& pb,
 			   GeometrySet<3>& output, dim_t<3> )
 	{
 		// everything vs a point

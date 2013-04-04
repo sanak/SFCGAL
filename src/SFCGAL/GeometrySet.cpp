@@ -146,21 +146,21 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::addPrimitive( const PrimitiveBase& p )
+	void GeometrySet<Dim>::addPrimitive( const PrimitiveBase<Dim>& p )
 	{
 		switch ( p.getType() )
 		{
 		case PrimitivePoint:
-			_points.insert( p.template as<typename PrimitivePoint_d<Dim>::Type>() );
+			_points.insert( p.template as<typename Point_d<Dim>::Type>() );
 			break;
 		case PrimitiveSegment:
-			_segments.insert( p.template as<typename PrimitiveSegment_d<Dim>::Type>() );
+			_segments.insert( p.template as<typename Segment_d<Dim>::Type>() );
 			break;
 		case PrimitiveSurface:
-			_surfaces.push_back( p.template as<typename PrimitiveSurface_d<Dim>::Type>() );
+			_surfaces.push_back( p.template as<typename Surface_d<Dim>::Type>() );
 			break;
 		case PrimitiveVolume:
-			_volumes.push_back( p.template as<typename PrimitiveVolume_d<Dim>::Type>() );
+			_volumes.push_back( p.template as<typename Volume_d<Dim>::Type>() );
 			break;
 		}
 	}
@@ -329,15 +329,16 @@ namespace SFCGAL {
 	}
 
 	// bbox of a 'volume' for 2D, will never be called
-	CGAL::Bbox_2 compute_solid_bbox( const NoVolume&, dim_t<2> )
+	CGAL::Bbox_2 computeBbox( const PrimitiveVolume_d<2>::Type& )
 	{
 		return CGAL::Bbox_2();
 	}
 
-	CGAL::Bbox_3 compute_solid_bbox( const typename Volume_d<3>::Type& vol, dim_t<3> )
+	CGAL::Bbox_3 computeBbox( const PrimitiveVolume_d<3>::Type& p )
 	{
 		CGAL::Bbox_3 ret;
 		MarkedPolyhedron::Point_const_iterator pit;
+		const MarkedPolyhedron& vol = p.primitive();
 		for ( pit = vol.points_begin(); pit != vol.points_end(); ++pit ) {
 			ret = ret + pit->bbox();
 		}
@@ -345,26 +346,32 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::computeBoundingBoxes( HandleCollection& handles,
+	void GeometrySet<Dim>::computeBoundingBoxes( typename HandleCollection<Dim>::Type& handles,
 						     typename BoxCollection<Dim>::Type& boxes ) const
 	{
 		boxes.clear();
+#if 0
 		for ( typename PointCollection::const_iterator it = _points.begin(); it != _points.end(); ++it ) {
-			handles.push_back( (PrimitiveBase*)&*it );
+			handles.push_back( (PrimitiveBase<Dim>*)&*it );
 			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), handles.back() ) );
 		}
 		for ( typename SegmentCollection::const_iterator it = _segments.begin(); it != _segments.end(); ++it ) {
-			handles.push_back( (PrimitiveBase*)&*it );
+			handles.push_back( (PrimitiveBase<Dim>*)&*it );
 			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), handles.back() ) );
 		}
 		for ( typename SurfaceCollection::const_iterator it = _surfaces.begin(); it != _surfaces.end(); ++it ) {
-			handles.push_back( (PrimitiveBase*)&*it );
+			handles.push_back( (PrimitiveBase<Dim>*)&*it );
 			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->primitive().bbox(), handles.back() ) );
 		}
 		for ( typename VolumeCollection::const_iterator it = _volumes.begin(); it != _volumes.end(); ++it ) {
-			handles.push_back( (PrimitiveBase*)&*it );
-			boxes.push_back( typename PrimitiveBox<Dim>::Type( compute_solid_bbox( it->primitive(), dim_t<Dim>() ),
+			handles.push_back( (PrimitiveBase<Dim>*)&*it );
+			boxes.push_back( typename PrimitiveBox<Dim>::Type( computeBbox( *it ),
 									   handles.back() ) );
+		}
+#endif
+		for ( ConstIterator it = primitives_begin(); it != primitives_end(); ++it ) {
+			handles.push_back( &*it );
+			boxes.push_back( typename PrimitiveBox<Dim>::Type( it->bbox(), handles.back() ) );
 		}
 	}
 
@@ -603,30 +610,30 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	void GeometrySet<Dim>::collectPoints( const PrimitiveBase& pa )
+	void GeometrySet<Dim>::collectPoints( const PrimitiveBase<Dim>& pa )
 	{
-		typedef typename PrimitivePoint_d<Dim>::Type TPoint;
-		typedef typename PrimitiveSegment_d<Dim>::Type TSegment;
-		typedef typename PrimitiveSurface_d<Dim>::Type TSurface;
-		typedef typename PrimitiveVolume_d<Dim>::Type TVolume;
+		typedef typename Point_d<Dim>::Type TPoint;
+		typedef typename Segment_d<Dim>::Type TSegment;
+		typedef typename Surface_d<Dim>::Type TSurface;
+		typedef typename Volume_d<Dim>::Type TVolume;
 
 		switch ( pa.getType() ) {
 		case PrimitivePoint: {
-			_points.insert( pa.as<TPoint>() );
+			_points.insert( pa.template as<TPoint>() );
 			break;
 		}
 		case PrimitiveSegment: {
-			const TSegment& seg = pa.as<TSegment>();
-			_points.insert( seg.primitive().source() );
-			_points.insert( seg.primitive().target() );
+			const TSegment& seg = pa.template as<TSegment>();
+			_points.insert( seg.source() );
+			_points.insert( seg.target() );
 			break;
 		}
 		case PrimitiveSurface: {
-			_collect_points( pa.as<TSurface>().primitive(), _points );
+			_collect_points( pa.template as<TSurface>(), _points );
 			break;
 		}
 		case PrimitiveVolume: {
-			_collect_points( pa.as<TVolume>().primitive(), _points );
+			_collect_points( pa.template as<TVolume>(), _points );
 			break;
 		}
 		}
@@ -702,6 +709,186 @@ namespace SFCGAL {
 		std::copy( g.volumes().begin(), g.volumes().end(), out_vol );
 		ostr << std::endl;
 		return ostr;
+	}
+
+	template <int Dim>
+	template <class T>
+	void GeometrySet<Dim>::IteratorBase<T>::increment()
+	{
+		if ( pointIt != pointEnd ) {
+			++pointIt;
+			return;
+		}
+		if ( segmentIt != segmentEnd ) {
+			++segmentIt;
+			return;
+		}
+		if ( surfaceIt != surfaceEnd ) {
+			++surfaceIt;
+			return;
+		}
+		if ( volumeIt != volumeEnd ) {
+			++volumeIt;
+		}
+	}
+
+	template <int Dim>
+	template <class T>
+	GeometrySet<Dim>::IteratorBase<T>::IteratorBase( PointIterator pit,
+							 PointIterator pend,
+							 SegmentIterator lit,
+							 SegmentIterator lend,
+							 SurfaceIterator sit,
+							 SurfaceIterator send,
+							 VolumeIterator vit,
+							 VolumeIterator vend ) :
+		pointIt( pit ), pointEnd( pend ),
+		segmentIt( lit ), segmentEnd( lend ),
+		surfaceIt( sit ), surfaceEnd( send ),
+		volumeIt( vit ), volumeEnd( vend )
+	{}
+
+	template <int Dim>
+	template <class T>
+	bool GeometrySet<Dim>::IteratorBase<T>::equal( const IteratorBase<T>& other ) const
+	{
+		return pointIt == other.pointIt &&
+			segmentIt == other.segmentIt &&
+			surfaceIt == other.surfaceIt &&
+			volumeIt == other.volumeIt &&
+			pointEnd == other.pointEnd &&
+			segmentEnd == other.segmentEnd &&
+			surfaceEnd == other.surfaceEnd &&
+			volumeEnd == other.volumeEnd;
+	}
+	
+	template <int Dim>
+	template <class T>
+	T& GeometrySet<Dim>::IteratorBase<T>::dereference() const
+	{
+		if ( pointIt != pointEnd ) {
+			return (T&)*pointIt;
+		}
+		if ( segmentIt != segmentEnd ) {
+			return (T&)*segmentIt;
+		}
+		if ( surfaceIt != surfaceEnd ) {
+			return (T&)*surfaceIt;
+		}
+		// if ( volumeIt != volumeEnd ) {
+		return (T&)*volumeIt;
+	}
+
+	template <int Dim>
+	typename GeometrySet<Dim>::ConstIterator GeometrySet<Dim>::primitives_begin( int selection ) const
+	{
+		if ( selection == -1 ) {
+			return ConstIterator( _points.begin(), _points.end(),
+					      _segments.begin(), _segments.end(),
+					      _surfaces.begin(), _surfaces.end(),
+					      _volumes.begin(), _volumes.end() );
+		}
+		if ( selection == PrimitivePoint ) {
+			return ConstIterator( _points.begin(), _points.end(),
+					      _segments.end(), _segments.end(),
+					      _surfaces.end(), _surfaces.end(),
+					      _volumes.end(), _volumes.end() );
+		}
+		if ( selection == PrimitiveSegment ) {
+			return ConstIterator( _points.end(), _points.end(),
+					      _segments.begin(), _segments.end(),
+					      _surfaces.end(), _surfaces.end(),
+					      _volumes.end(), _volumes.end() );
+		}
+		if ( selection == PrimitiveSurface ) {
+			return ConstIterator( _points.end(), _points.end(),
+					      _segments.end(), _segments.end(),
+					      _surfaces.begin(), _surfaces.end(),
+					      _volumes.end(), _volumes.end() );
+		}
+		// if ( selection == PrimitiveVolume ) {
+		return ConstIterator( _points.end(), _points.end(),
+				      _segments.end(), _segments.end(),
+				      _surfaces.end(), _surfaces.end(),
+				      _volumes.begin(), _volumes.end() );
+	}
+
+	template <int Dim>
+	typename GeometrySet<Dim>::Iterator GeometrySet<Dim>::primitives_begin( int selection )
+	{
+		if ( selection == -1 ) {
+			return Iterator( _points.begin(), _points.end(),
+					      _segments.begin(), _segments.end(),
+					      _surfaces.begin(), _surfaces.end(),
+					      _volumes.begin(), _volumes.end() );
+		}
+		if ( selection == PrimitivePoint ) {
+			return Iterator( _points.begin(), _points.end(),
+					      _segments.end(), _segments.end(),
+					      _surfaces.end(), _surfaces.end(),
+					      _volumes.end(), _volumes.end() );
+		}
+		if ( selection == PrimitiveSegment ) {
+			return Iterator( _points.end(), _points.end(),
+					      _segments.begin(), _segments.end(),
+					      _surfaces.end(), _surfaces.end(),
+					      _volumes.end(), _volumes.end() );
+		}
+		if ( selection == PrimitiveSurface ) {
+			return Iterator( _points.end(), _points.end(),
+					      _segments.end(), _segments.end(),
+					      _surfaces.begin(), _surfaces.end(),
+					      _volumes.end(), _volumes.end() );
+		}
+		//		if ( selection == PrimitiveVolume ) {
+		return Iterator( _points.end(), _points.end(),
+				 _segments.end(), _segments.end(),
+				 _surfaces.end(), _surfaces.end(),
+				 _volumes.begin(), _volumes.end() );
+	}
+
+	template <int Dim>
+	typename GeometrySet<Dim>::ConstIterator GeometrySet<Dim>::primitives_end() const
+	{
+		return ConstIterator( _points.end(), _points.end(),
+				      _segments.end(), _segments.end(),
+				      _surfaces.end(), _surfaces.end(),
+				      _volumes.end(), _volumes.end() );
+	}
+	
+	template <int Dim>
+	typename GeometrySet<Dim>::Iterator GeometrySet<Dim>::primitives_end()
+	{
+		return Iterator( _points.end(), _points.end(),
+				 _segments.end(), _segments.end(),
+				 _surfaces.end(), _surfaces.end(),
+				 _volumes.end(), _volumes.end() );
+	}
+	
+	template <int Dim>
+	typename GeometrySet<Dim>::Iterator GeometrySet<Dim>::insert( typename GeometrySet<Dim>::Iterator it, const PrimitiveBase<Dim>& value )
+	{
+		switch ( value.getType() ) {
+		case PrimitivePoint:
+			_points.insert( it.pointIt, value.template as<typename Point_d<Dim>::Type>() );
+			break;
+		case PrimitiveSegment:
+			_segments.insert( it.segmentIt, value.template as<typename Segment_d<Dim>::Type>() );
+			break;
+		case PrimitiveSurface:
+			_surfaces.insert( it.surfaceIt, value.template as<typename Surface_d<Dim>::Type>() );
+			break;
+		case PrimitiveVolume:
+			_volumes.insert( it.volumeIt, value.template as<typename Volume_d<Dim>::Type>() );
+			break;
+		}
+		return it;
+	}
+
+	template <int Dim>
+	typename GeometrySet<Dim>::ConstIterator GeometrySet<Dim>::insert( typename GeometrySet<Dim>::ConstIterator it, const PrimitiveBase<Dim>& value )
+	{
+		return it;
 	}
 
 	template class GeometrySet<2>;

@@ -24,7 +24,7 @@
 namespace SFCGAL {
 	class Geometry;
 	template <int Dim> class GeometrySet;
-	class PrimitiveBase;
+	template <int Dim> class PrimitiveBase;
 
 	namespace algorithm {
 	/*
@@ -40,7 +40,8 @@ namespace SFCGAL {
 	template <int Dim>
 	bool intersects( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b );
 
-	bool intersects( const PrimitiveBase& a, const PrimitiveBase& b );
+	template <int Dim>
+	bool intersects( const PrimitiveBase<Dim>& a, const PrimitiveBase<Dim>& b );
 
     }
 }

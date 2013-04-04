@@ -47,7 +47,7 @@ namespace algorithm
 	}
 
 	template <int Dim>
-	static void substract_from_segment( const PrimitiveBase& seg, const PrimitiveBase& prim, GeometrySet<Dim>& output )
+	static void substract_from_segment( const PrimitiveBase<Dim>& seg, const PrimitiveBase<Dim>& prim, GeometrySet<Dim>& output )
 	{
 		if ( prim.getType() == PrimitiveSegment ) {
 			const typename Segment_d<Dim>::Type& sega = seg.template as<typename Segment_d<Dim>::Type>();
@@ -77,7 +77,7 @@ namespace algorithm
 
 	template <int Dim>
 	// pa and pb intersects
-	static void difference_primitive( const PrimitiveBase& pa, const PrimitiveBase& pb, GeometrySet<Dim>& output )
+	static void difference_primitive( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb, GeometrySet<Dim>& output )
 	{
 		if ( pa.getType() == PrimitivePoint ) {
 			// difference = empty
@@ -170,7 +170,7 @@ namespace algorithm
 	template <int Dim>
 	void difference( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b, GeometrySet<Dim>& output )
 	{
-		typename SFCGAL::HandleCollection ahandles, bhandles;
+		typename SFCGAL::HandleCollection<Dim>::Type ahandles, bhandles;
 		typename SFCGAL::BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );
 		b.computeBoundingBoxes( bhandles, bboxes );
@@ -180,8 +180,8 @@ namespace algorithm
 			GeometrySet<Dim> tempOut;
 			for ( size_t j = 0; j < bboxes.size(); ++j ) {
 				if ( CGAL::do_overlap(aboxes[i].bbox(), bboxes[j].bbox()) ) {
-					const PrimitiveBase* pa = aboxes[i].handle();
-					const PrimitiveBase* pb = bboxes[j].handle();
+					const PrimitiveBase<Dim>* pa = aboxes[i].handle();
+					const PrimitiveBase<Dim>* pb = bboxes[j].handle();
 					if ( algorithm::intersects( *pa, *pb ) ) {
 						intersectsA = true;
 

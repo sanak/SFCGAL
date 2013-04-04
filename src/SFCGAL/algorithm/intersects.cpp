@@ -38,7 +38,7 @@ namespace algorithm
 {
 	//
 	// Type of pa must be of larger dimension than type of pb
-	bool _intersects( const PrimitiveBase& pa, const PrimitiveBase& pb, const dim_t<2>& )
+	bool _intersects( const PrimitiveBase<2>& pa, const PrimitiveBase<2>& pb )
 	{
 		//
 		// Point vs. Point
@@ -212,7 +212,7 @@ namespace algorithm
 
 	//
 	// intersects of a volume with any other type
-	bool intersects_volume_x( const MarkedPolyhedron* polyhedron, const PrimitiveBase& geometry )
+	bool intersects_volume_x( const MarkedPolyhedron* polyhedron, const PrimitiveBase<3>& geometry )
 	{
 		typedef CGAL::Polyhedral_mesh_domain_3<MarkedPolyhedron, Kernel> Mesh_domain;
 		
@@ -248,7 +248,7 @@ namespace algorithm
 
 	//
 	// Type of pa must be of larger dimension than type of pb
-	bool _intersects( const PrimitiveBase& pa, const PrimitiveBase& pb, const dim_t<3>& )
+	bool _intersects( const PrimitiveBase<3>& pa, const PrimitiveBase<3>& pb )
 	{
 		if ( pa.getType() == PrimitivePoint && pb.getType() == PrimitivePoint ) {
 			return pa.as<Point_d<3>::Type>()
@@ -288,23 +288,21 @@ namespace algorithm
 	//
 	// We deal here with symmetric call
 	template <int Dim>
-	bool dispatch_intersects_sym( const PrimitiveBase& pa, const PrimitiveBase& pb, const dim_t<Dim>& dim )
+	bool dispatch_intersects_sym( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb )
 	{
 		// assume types are ordered by dimension within the boost::variant
 		if ( pa.getType() >= pb.getType() ) {
-			return _intersects( pa, pb, dim );
+			return _intersects( pa, pb );
 		}
 		else {
-			return _intersects( pb, pa, dim );
+			return _intersects( pb, pa );
 		}
 	}
 
-	bool intersects( const PrimitiveBase& pa, const PrimitiveBase& pb )
+	template <int Dim>
+	bool intersects( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb )
 	{
-		if ( pa.is3D() ) {
-			return dispatch_intersects_sym( pa, pb, dim_t<3>() );
-		}
-		return dispatch_intersects_sym( pa, pb, dim_t<2>() );
+		return dispatch_intersects_sym( pa, pb  );
 	}
 
 	struct found_an_intersection{};
@@ -315,7 +313,7 @@ namespace algorithm
 		void operator()( const typename PrimitiveBox<Dim>::Type& a,
 				 const typename PrimitiveBox<Dim>::Type& b )
 		{
-			if ( dispatch_intersects_sym( *a.handle(), *b.handle(), dim_t<Dim>() ) ) {
+			if ( dispatch_intersects_sym( *a.handle(), *b.handle() ) ) {
 				throw found_an_intersection();
 			}
 		}
@@ -324,7 +322,7 @@ namespace algorithm
 	template <int Dim>
 	bool intersects( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b )
 	{
-		typename SFCGAL::HandleCollection ahandles, bhandles;
+		typename SFCGAL::HandleCollection<Dim>::Type ahandles, bhandles;
 		typename SFCGAL::BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );
 		b.computeBoundingBoxes( bhandles, bboxes );
@@ -343,6 +341,9 @@ namespace algorithm
 
 	template bool intersects<2>( const GeometrySet<2>& a, const GeometrySet<2>& b );
 	template bool intersects<3>( const GeometrySet<3>& a, const GeometrySet<3>& b );
+
+	template bool intersects<2>( const PrimitiveBase<2>& pa, const PrimitiveBase<2>& pb );
+	template bool intersects<3>( const PrimitiveBase<3>& pa, const PrimitiveBase<3>& pb );
 
 	bool intersects( const Geometry& ga, const Geometry& gb )
 	{

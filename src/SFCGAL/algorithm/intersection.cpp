@@ -43,15 +43,15 @@ typedef CGAL::Triangle_2<Kernel> Triangle_2;
 namespace algorithm
 {
 	// see Intersection3D.cpp
-	void intersection( const PrimitiveBase& pa, const PrimitiveBase& pb,
+	void intersection( const PrimitiveBase<3>& pa, const PrimitiveBase<3>& pb,
 			   GeometrySet<3>& output, dim_t<3> );
 	// see Intersection2D.cpp
-	void intersection( const PrimitiveBase& pa, const PrimitiveBase& pb,
+	void intersection( const PrimitiveBase<2>& pa, const PrimitiveBase<2>& pb,
 			   GeometrySet<2>& output, dim_t<2> );
 	//
 	// We deal here with symmetric call
 	template <int Dim>
-	void dispatch_intersection_sym( const PrimitiveBase& pa, const PrimitiveBase& pb,
+	void dispatch_intersection_sym( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb,
 					     GeometrySet<Dim>& output )
 	{
 		// assume types are ordered by dimension within the boost::variant
@@ -64,13 +64,13 @@ namespace algorithm
 	}
 
 	template <int Dim>
-	void intersection( const PrimitiveBase& pa, const PrimitiveBase& pb, GeometrySet<Dim>& output )
+	void intersection( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb, GeometrySet<Dim>& output )
 	{
 		dispatch_intersection_sym( pa, pb, output );
 	}
 
-	template void intersection<2>( const PrimitiveBase& a, const PrimitiveBase& b, GeometrySet<2>& );
-	template void intersection<3>( const PrimitiveBase& a, const PrimitiveBase& b, GeometrySet<3>& );
+	template void intersection<2>( const PrimitiveBase<2>& a, const PrimitiveBase<2>& b, GeometrySet<2>& );
+	template void intersection<3>( const PrimitiveBase<3>& a, const PrimitiveBase<3>& b, GeometrySet<3>& );
 
 	template <int Dim>
 	struct intersection_cb
@@ -89,7 +89,7 @@ namespace algorithm
 	template <int Dim>
 	void intersection( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b, GeometrySet<Dim>& output )
 	{
-		typename SFCGAL::HandleCollection ahandles, bhandles;
+		typename SFCGAL::HandleCollection<Dim>::Type ahandles, bhandles;
 		typename SFCGAL::BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );
 		b.computeBoundingBoxes( bhandles, bboxes );

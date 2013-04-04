@@ -34,13 +34,13 @@ namespace algorithm {
     
 	//
 	// must be called with pa's dimension larger than pb's
-	void intersection( const PrimitiveBase& pa, const PrimitiveBase& pb,
+	void intersection( const PrimitiveBase<2>& pa, const PrimitiveBase<2>& pb,
 			   GeometrySet<2>& output, dim_t<2> )
 	{
 		// everything vs a point
 		if ( pb.getType() == PrimitivePoint ) {
 			if ( algorithm::intersects( pa, pb ) ) {
-				output.addPrimitive( pb.as<PrimitivePoint_d<2>::Type>() );
+				output.addPrimitive( pb.as<Point_d<2>::Type>() );
 			}
 		}
 		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSurface ) {
@@ -93,8 +93,8 @@ namespace algorithm {
 					    std::back_inserter( output.surfaces() ) );
 		}
 		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitiveSegment ) {
-			const CGAL::Segment_2<Kernel> *seg1 = &pa.as<PrimitiveSegment_d<2>::Type >().primitive();
-			const CGAL::Segment_2<Kernel> *seg2 = &pb.as<PrimitiveSegment_d<2>::Type >().primitive();
+			const CGAL::Segment_2<Kernel> *seg1 = &pa.as<Segment_d<2>::Type >();
+			const CGAL::Segment_2<Kernel> *seg2 = &pb.as<Segment_d<2>::Type >();
 			CGAL::Object interObj = CGAL::intersection( *seg1, *seg2 );
 			output.addPrimitive( interObj );
 		}

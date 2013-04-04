@@ -96,6 +96,13 @@ namespace SFCGAL {
 	};
 	
 	///
+	/// Another way of looking at TypeForDimension<Dim>::Bbox
+	template <int Dim>
+	struct Bbox_d {
+		typedef typename TypeForDimension<Dim>::Bbox Type;
+	};
+
+	///
 	/// Another way of looking at TypeForDimension<Dim>::Point
 	template <int Dim>
 	struct Point_d {
