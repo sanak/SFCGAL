@@ -51,49 +51,56 @@ namespace SFCGAL {
 	};
 
 	///
-	/// Flags available for each type of Geometry type.
+	/// Flags available for each type of Primitive.
 	/// Primitives can be 'flagged' in order to speed up recomposition
-	enum ElementFlag
+	enum PrimitiveFlag
 	{
 		// the polyhedron is planar => build a triangle or a polygon
 		FLAG_IS_PLANAR = 1
 	};
 
+	///
+	/// Base class for Primitive. Store a flag
+	// TODO: getType => type() ?
+	// TODO: operator* ?
+	// TODO: bbox() ?
+	template <class T> class Primitive;
 	class PrimitiveBase
 	{
 	public:
+		PrimitiveBase() : _flags(0) {}
+		PrimitiveBase( int f ) : _flags(f) {}
+
 		virtual int getType() const = 0;
 		virtual bool is3D() const = 0;
 
+		int flags() const { return _flags; }
+		void setFlags( int flags ) { _flags = flags; }
+
 		template <class T>
 		const T& as() const {
-			return static_cast<const T&>( *this );
+			return static_cast<const Primitive<T>* >( this )->primitive();
 		}
 		template <class T>
 		T& as() {
-			return static_cast<T&>( *this );
+			return static_cast<Primitive<T>* >( this )->primitive();
 		}
+	private:
+		int _flags;
 	};
 
 	///
-	/// Primitive, a Primitive with flags
+	/// Primitive class
 	/// T : Point_d, Segment_d, Surface_d, Volume_d
 	template <class T>
 	class Primitive : public PrimitiveBase
 	{
 	public:
-		int flags() const { return _flags; }
-		void setFlags( int flags ) { _flags = flags; }
-
 		// constructor from T
-		Primitive() :  _flags(0) {}
-		Primitive( const T& p ) : _primitive(p), _flags(0) {}
-		Primitive( const T& p, int f ) : _primitive(p), _flags(f) {}
+		Primitive() :  PrimitiveBase() {}
+		Primitive( const T& p ) : PrimitiveBase(), _primitive(p) {}
+		Primitive( const T& p, int f ) : PrimitiveBase(f), _primitive(p) {}
 
-		Primitive( const Primitive& other ) :
-			_primitive( other._primitive ),
-			_flags( other._flags )
-		{}
 		bool operator< ( const Primitive& other ) const {
 			return _primitive < other._primitive;
 		}
@@ -111,7 +118,6 @@ namespace SFCGAL {
 		
 	private:
 		T _primitive;
-		int _flags;
 	};
 
 	template <int Dim>
@@ -270,6 +276,7 @@ namespace SFCGAL {
 		/**
 		 * Compute all bounding boxes and handles of the set
 		 */
+		// TODO : add a iterator over points then segments, then ...
 		void computeBoundingBoxes( HandleCollection& handles, typename BoxCollection<Dim>::Type& boxes ) const;
 
 		inline PointCollection& points() { return _points; }
@@ -292,6 +299,7 @@ namespace SFCGAL {
 		/**
 		 * Filter (remove) primitives that are already covered by others
 		 */
+		// TODO : move out of the class
 		void filterCovered( GeometrySet<Dim>& output ) const;
 
 	private:

@@ -45,8 +45,8 @@ namespace algorithm
 		//
 
 		if ( pa.getType() == PrimitivePoint && pb.getType() == PrimitivePoint ) {
-			return pa.as<PrimitivePoint_d<2>::Type>().primitive()
-				== pb.as<PrimitivePoint_d<2>::Type>().primitive();
+			return pa.as<Point_d<2>::Type>()
+				== pb.as<Point_d<2>::Type>();
 		}
 
 		//
@@ -54,8 +54,8 @@ namespace algorithm
 		//
 
 		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitivePoint ) {
-			const CGAL::Segment_2<Kernel>& seg = pa.as<PrimitiveSegment_d<2>::Type>().primitive();
-			const CGAL::Point_2<Kernel>& pt = pb.as<PrimitivePoint_d<2>::Type>().primitive();
+			const CGAL::Segment_2<Kernel>& seg = pa.as<Segment_d<2>::Type>();
+			const CGAL::Point_2<Kernel>& pt = pb.as<Point_d<2>::Type>();
 			return seg.has_on( pt );
 		}
 
@@ -64,8 +64,8 @@ namespace algorithm
 		//
 
 		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitiveSegment ) {
-			const CGAL::Segment_2<Kernel>& seg1 = pa.as<PrimitiveSegment_d<2>::Type>().primitive();
-			const CGAL::Segment_2<Kernel>& seg2 = pb.as<PrimitiveSegment_d<2>::Type>().primitive();
+			const CGAL::Segment_2<Kernel>& seg1 = pa.as<Segment_d<2>::Type>();
+			const CGAL::Segment_2<Kernel>& seg2 = pb.as<Segment_d<2>::Type>();
 			return CGAL::do_intersect( seg1, seg2 );
 		}
 		//
@@ -74,8 +74,8 @@ namespace algorithm
 
 		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitivePoint ) {
 			// Polygon versus Point
-			const CGAL::Polygon_with_holes_2<Kernel> *poly = &pa.as<PrimitiveSurface_d<2>::Type>().primitive();
-			const CGAL::Point_2<Kernel> *pt = &pb.as<PrimitivePoint_d<2>::Type>().primitive();
+			const CGAL::Polygon_with_holes_2<Kernel> *poly = &pa.as<Surface_d<2>::Type>();
+			const CGAL::Point_2<Kernel> *pt = &pb.as<Point_d<2>::Type>();
 
 			int b1 = poly->outer_boundary().bounded_side( *pt );
 			if ( b1 == CGAL::ON_BOUNDARY ) {
@@ -101,8 +101,8 @@ namespace algorithm
 		//
 
 		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSegment ) {
-			const CGAL::Polygon_with_holes_2<Kernel> *poly = &pa.as<PrimitiveSurface_d<2>::Type>().primitive();
-			const CGAL::Segment_2<Kernel> *seg = &pb.as<PrimitiveSegment_d<2>::Type>().primitive();
+			const CGAL::Polygon_with_holes_2<Kernel> *poly = &pa.as<Surface_d<2>::Type>();
+			const CGAL::Segment_2<Kernel> *seg = &pb.as<Segment_d<2>::Type>();
 			
 			// 1. if the segment intersects a boundary of the polygon, returns true
 			// 2. else, if one of the point of the segment intersects the polygon, returns true
@@ -142,8 +142,8 @@ namespace algorithm
 		//
 
 		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSurface ) {
-			const CGAL::Polygon_with_holes_2<Kernel> *poly1 = &pa.as<PrimitiveSurface_d<2>::Type>().primitive();
-			const CGAL::Polygon_with_holes_2<Kernel> *poly2 = &pb.as<PrimitiveSurface_d<2>::Type>().primitive();
+			const CGAL::Polygon_with_holes_2<Kernel> *poly1 = &pa.as<Surface_d<2>::Type>();
+			const CGAL::Polygon_with_holes_2<Kernel> *poly2 = &pb.as<Surface_d<2>::Type>();
 
 			// 1. if rings intersects, returns true
 			// 2. else, if poly1 is inside poly2 or poly1 inside poly2 (but not in holes), returns true
@@ -251,35 +251,35 @@ namespace algorithm
 	bool _intersects( const PrimitiveBase& pa, const PrimitiveBase& pb, const dim_t<3>& )
 	{
 		if ( pa.getType() == PrimitivePoint && pb.getType() == PrimitivePoint ) {
-			return pa.as<PrimitivePoint_d<3>::Type>().primitive()
-				== pb.as<PrimitivePoint_d<3>::Type>().primitive();
+			return pa.as<Point_d<3>::Type>()
+				== pb.as<Point_d<3>::Type>();
 		}
 		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitivePoint ) {
-			const CGAL::Segment_3<Kernel>& seg = pa.as<PrimitiveSegment_d<3>::Type>().primitive();
-			const CGAL::Point_3<Kernel>& pt = pb.as<PrimitivePoint_d<3>::Type>().primitive();
+			const CGAL::Segment_3<Kernel>& seg = pa.as<Segment_d<3>::Type>();
+			const CGAL::Point_3<Kernel>& pt = pb.as<Point_d<3>::Type>();
 			return seg.has_on( pt );
 		}
 		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitiveSegment ) {
-			const CGAL::Segment_3<Kernel>& sega = pa.as<PrimitiveSegment_d<3>::Type>().primitive();
-			const CGAL::Segment_3<Kernel>& segb = pb.as<PrimitiveSegment_d<3>::Type>().primitive();
+			const CGAL::Segment_3<Kernel>& sega = pa.as<Segment_d<3>::Type>();
+			const CGAL::Segment_3<Kernel>& segb = pb.as<Segment_d<3>::Type>();
 			return CGAL::do_intersect( sega, segb );
 		}
 		if ( pa.getType() == PrimitiveVolume ) {
-			return intersects_volume_x( &pa.as<PrimitiveVolume_d<3>::Type>().primitive(), pb );
+			return intersects_volume_x( &pa.as<Volume_d<3>::Type>(), pb );
 		}
 		if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitivePoint ) {
-			const CGAL::Triangle_3<Kernel>& tri = pa.as<PrimitiveSurface_d<3>::Type>().primitive();
-			const CGAL::Point_3<Kernel>& pt = pb.as<PrimitivePoint_d<3>::Type>().primitive();
+			const CGAL::Triangle_3<Kernel>& tri = pa.as<Surface_d<3>::Type>();
+			const CGAL::Point_3<Kernel>& pt = pb.as<Point_d<3>::Type>();
 			return tri.has_on( pt );
 		}
 		if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSegment ) {
-			const CGAL::Triangle_3<Kernel>& tri = pa.as<PrimitiveSurface_d<3>::Type>().primitive();
-			const CGAL::Segment_3<Kernel>& seg = pb.as<PrimitiveSegment_d<3>::Type>().primitive();
+			const CGAL::Triangle_3<Kernel>& tri = pa.as<Surface_d<3>::Type>();
+			const CGAL::Segment_3<Kernel>& seg = pb.as<Segment_d<3>::Type>();
 			return CGAL::do_intersect( tri, seg );
 		}
 		if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSurface ) {
-			const CGAL::Triangle_3<Kernel>& tri1 = pa.as<PrimitiveSurface_d<3>::Type>().primitive();
-			const CGAL::Triangle_3<Kernel>& tri2 = pb.as<PrimitiveSurface_d<3>::Type>().primitive();
+			const CGAL::Triangle_3<Kernel>& tri1 = pa.as<Surface_d<3>::Type>();
+			const CGAL::Triangle_3<Kernel>& tri2 = pb.as<Surface_d<3>::Type>();
 			return CGAL::do_intersect( tri1, tri2 );
 		}
 		return false;

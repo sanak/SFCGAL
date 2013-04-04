@@ -44,8 +44,8 @@ namespace algorithm {
 			}
 		}
 		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSurface ) {
-			const CGAL::Polygon_with_holes_2<Kernel>* poly1 = &pa.as<PrimitiveSurface_d<2>::Type>().primitive();
-			const CGAL::Polygon_with_holes_2<Kernel>* poly2 = &pb.as<PrimitiveSurface_d<2>::Type>().primitive();
+			const CGAL::Polygon_with_holes_2<Kernel>* poly1 = &pa.as<Surface_d<2>::Type>();
+			const CGAL::Polygon_with_holes_2<Kernel>* poly2 = &pb.as<Surface_d<2>::Type>();
 
 			// shortcut for triangles
 			if ( poly1->holes_begin() == poly1->holes_end() &&
@@ -99,8 +99,8 @@ namespace algorithm {
 			output.addPrimitive( interObj );
 		}
 		else if ( pa.getType() == PrimitiveSurface && pb.getType() == PrimitiveSegment ) {
-			const CGAL::Polygon_with_holes_2<Kernel> *poly = &pa.as<PrimitiveSurface_d<2>::Type>().primitive();
-			const CGAL::Segment_2<Kernel> *seg = &pb.as<PrimitiveSegment_d<2>::Type>().primitive();
+			const CGAL::Polygon_with_holes_2<Kernel> *poly = &pa.as<Surface_d<2>::Type>();
+			const CGAL::Segment_2<Kernel> *seg = &pb.as<Segment_d<2>::Type>();
 
 			// shortcut for triangle
 			if ( poly->holes_begin() == poly->holes_end() && poly->outer_boundary().size() == 3 ) {

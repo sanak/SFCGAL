@@ -50,8 +50,8 @@ namespace algorithm
 	static void substract_from_segment( const PrimitiveBase& seg, const PrimitiveBase& prim, GeometrySet<Dim>& output )
 	{
 		if ( prim.getType() == PrimitiveSegment ) {
-			const typename Segment_d<Dim>::Type& sega = seg.template as<typename PrimitiveSegment_d<Dim>::Type>().primitive();
-			const typename Segment_d<Dim>::Type& segb = prim.template as<typename PrimitiveSegment_d<Dim>::Type>().primitive();
+			const typename Segment_d<Dim>::Type& sega = seg.template as<typename Segment_d<Dim>::Type>();
+			const typename Segment_d<Dim>::Type& segb = prim.template as<typename Segment_d<Dim>::Type>();
 			typename Point_d<Dim>::Type pA( sega.source() );
 			typename Point_d<Dim>::Type pB( sega.target() );
 			typename Point_d<Dim>::Type pC( segb.source() );

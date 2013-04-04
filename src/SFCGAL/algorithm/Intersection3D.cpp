@@ -41,8 +41,8 @@ namespace algorithm {
 	{
 		typedef CGAL::Polyhedral_mesh_domain_3<MarkedPolyhedron, Kernel> Mesh_domain;
 
-		const MarkedPolyhedron* ext_poly = &pa.as<PrimitiveVolume_d<3>::Type>().primitive();
-		const CGAL::Segment_3<Kernel>* segment = &pb.as<PrimitiveSegment_d<3>::Type>().primitive();
+		const MarkedPolyhedron* ext_poly = &pa.as<Volume_d<3>::Type>();
+		const CGAL::Segment_3<Kernel>* segment = &pb.as<Segment_d<3>::Type>();
 
 		MarkedPolyhedron *ext_poly_nc = const_cast<MarkedPolyhedron*>( ext_poly );
 		CGAL::Point_inside_polyhedron_3<MarkedPolyhedron, Kernel> is_in_ext( *ext_poly_nc );
@@ -251,24 +251,24 @@ namespace algorithm {
 		// everything vs a point
 		if ( pb.getType() == PrimitivePoint ) {
 			if ( algorithm::intersects( pa, pb ) ) {
-				output.addPrimitive( pb.as<PrimitivePoint_d<3>::Type>().primitive() );
+				output.addPrimitive( pb.as<Point_d<3>::Type>() );
 			}
 		}
 		else if ( pa.getType() == PrimitiveSegment && pb.getType() == PrimitiveSegment ) {
-			const CGAL::Segment_3<Kernel>& seg1 = pa.as<PrimitiveSegment_d<3>::Type>().primitive();
-			const CGAL::Segment_3<Kernel>& seg2 = pb.as<PrimitiveSegment_d<3>::Type>().primitive();
+			const CGAL::Segment_3<Kernel>& seg1 = pa.as<Segment_d<3>::Type>();
+			const CGAL::Segment_3<Kernel>& seg2 = pb.as<Segment_d<3>::Type>();
 			CGAL::Object interObj = CGAL::intersection( seg1, seg2 );
 			output.addPrimitive( interObj );
 		}
 		else if ( pa.getType() == PrimitiveSurface ) {
-			const CGAL::Triangle_3<Kernel>& tri1 = pa.as<PrimitiveSurface_d<3>::Type>().primitive();
+			const CGAL::Triangle_3<Kernel>& tri1 = pa.as<Surface_d<3>::Type>();
 			if ( pb.getType() == PrimitiveSegment ) {
-				const CGAL::Segment_3<Kernel>& seg2 = pb.as<PrimitiveSegment_d<3>::Type>().primitive();
+				const CGAL::Segment_3<Kernel>& seg2 = pb.as<Segment_d<3>::Type>();
 				CGAL::Object interObj = CGAL::intersection( tri1, seg2 );
 				output.addPrimitive( interObj );
 			}
 			else if ( pb.getType() == PrimitiveSurface ) {
-				const CGAL::Triangle_3<Kernel>& tri2 = pb.as<PrimitiveSurface_d<3>::Type>().primitive();
+				const CGAL::Triangle_3<Kernel>& tri2 = pb.as<Surface_d<3>::Type>();
 				CGAL::Object interObj = CGAL::intersection( tri1, tri2 );
 				output.addPrimitive( interObj );
 			}
@@ -278,13 +278,13 @@ namespace algorithm {
 				_intersection_solid_segment( pa, pb, output );
 			}
 			else if ( pb.getType() == PrimitiveSurface ) {
-				_intersection_solid_triangle( pa.as<PrimitiveVolume_d<3>::Type>().primitive(),
-							      pb.as<PrimitiveSurface_d<3>::Type>().primitive(),
+				_intersection_solid_triangle( pa.as<Volume_d<3>::Type>(),
+							      pb.as<Surface_d<3>::Type>(),
 							      output );
 			}
 			else if ( pb.getType() == PrimitiveVolume ) {
-				_intersection_solid_solid(  pa.as<PrimitiveVolume_d<3>::Type>().primitive(),
-							    pb.as<PrimitiveVolume_d<3>::Type>().primitive(),
+				_intersection_solid_solid(  pa.as<Volume_d<3>::Type>(),
+							    pb.as<Volume_d<3>::Type>(),
 							    output );
 			}
 		}
