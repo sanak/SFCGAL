@@ -85,9 +85,9 @@ namespace algorithm
 		else if ( pa.getType() == PrimitiveSegment ) {
 			GeometrySet<Dim> inter;
 			algorithm::intersection( pa, pb, inter );
-			if ( ! inter.segments().empty() ) {
-				for ( typename GeometrySet<Dim>::SegmentCollection::const_iterator it = inter.segments().begin();
-				      it != inter.segments().end();
+			if ( inter.size( PrimitiveSegment ) > 0 ) {
+				for ( typename GeometrySet<Dim>::const_iterator it = inter.primitives_begin( PrimitiveSegment );
+				      it != inter.primitives_end();
 				      ++it ) {
 					substract_from_segment( pa, *it, output );
 				}
@@ -101,68 +101,45 @@ namespace algorithm
 	template <int Dim>
 	static void filter_self_intersection( const GeometrySet<Dim>& input, GeometrySet<Dim>& output )
 	{
-		{
-			typedef std::list< typename PrimitivePoint_d<Dim>::Type > PointList;
-			PointList points;
+		for ( int ptype = PrimitivePoint; ptype < PrimitiveVolume; ++ptype ) {
+			GeometrySet<Dim> temp;
 
-			std::copy( input.points().begin(), input.points().end(), std::back_inserter( points ) );
+			// idx is a table of pointer to primitives
+			std::vector< const PrimitiveBase<Dim>* > idx;
 
-			typename PointList::iterator it = points.begin();
-			while ( it != points.end() ) {
-				bool intersectsA = false;
-				for ( typename PointList::iterator it2 = points.begin(); it2 != points.end(); ++it2 ) {
-					if ( it == it2 ) {
-						continue;
-					}
-					
-					if ( CGAL::do_overlap( it->primitive().bbox(), it2->primitive().bbox() ) &&
-					     algorithm::intersects( *it, *it2 ) ) {
-						intersectsA = true;
-						GeometrySet<Dim> temp;
-						algorithm::intersection( *it, *it2, temp );
-						std::copy( temp.points().begin(), temp.points().end(), std::back_inserter( points ) );
-						// erase it2
-						points.erase( it2 );
-						break;
-					}
-				}
-				if ( ! intersectsA ) {
-					output.addPrimitive( it->primitive() );
-				}
-				// suppress A
-				it = points.erase( it );
+			// first consider input primitives
+			for ( typename GeometrySet<Dim>::const_iterator it = input.primitives_begin( ptype );
+			      it != input.primitives_end();
+			      ++it ) {
+				idx.push_back( &*it );
 			}
-		}
-		{
-			typedef std::list< typename PrimitiveSegment_d<Dim>::Type > SegmentList;
-			SegmentList segments;
 
-			std::copy( input.segments().begin(), input.segments().end(), std::back_inserter( segments ) );
-
-			typename SegmentList::iterator it = segments.begin();
-			while ( it != segments.end() ) {
+			for ( size_t i = 0; i < idx.size(); ++i ) {
+				if ( !idx[i] ) continue;
 				bool intersectsA = false;
-				for ( typename SegmentList::iterator it2 = segments.begin(); it2 != segments.end(); ++it2 ) {
-					if ( it == it2 ) {
-						continue;
-					}
-
-					if ( CGAL::do_overlap( it->primitive().bbox(), it2->primitive().bbox() ) &&
-					     algorithm::intersects( *it, *it2 ) ) {
+				for ( size_t j = i+1; j < idx.size(); ++j ) {
+					if ( !idx[j] ) continue;
+					if ( CGAL::do_overlap( idx[i]->bbox(), idx[j]->bbox() ) &&
+					     algorithm::intersects( *idx[i], *idx[j] ) ) {
 						intersectsA = true;
-						GeometrySet<Dim> temp;
-						algorithm::intersection( *it, *it2, temp );
-						std::copy( temp.segments().begin(), temp.segments().end(), std::back_inserter( segments ) );
-						// erase it2
-						segments.erase( it2 );
+						algorithm::intersection( *idx[i], *idx[j], temp );
+
+						for ( typename GeometrySet<Dim>::const_iterator it = temp.primitives_begin( ptype );
+						      it != temp.primitives_end();
+						      ++it ) {
+							// add intersection primitives to the table
+							idx.push_back( &*it );
+						}
+						// the jth primitive has been replaced by an intersection,
+						// remove it from the table
+						idx[j] = 0;
 						break;
 					}
 				}
 				if ( ! intersectsA ) {
-					output.addPrimitive( it->primitive() );
+					output.addPrimitive( *idx[i] );
 				}
-				// suppress A
-				it = segments.erase( it );
+				idx[i] = 0;
 			}
 		}
 	}

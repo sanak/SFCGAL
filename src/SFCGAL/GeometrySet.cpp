@@ -678,35 +678,57 @@ namespace SFCGAL {
 		_filter_covered( _points.begin(), _points.end(), output );
 	}
 
+	std::ostream& operator<<( std::ostream& ostr, const PrimitiveBase<2>& p )
+	{
+		switch ( p.getType() ) {
+		case PrimitivePoint:
+			return ostr << p.as<Point_d<2>::Type>();
+		case PrimitiveSegment:
+			return ostr << p.as<Segment_d<2>::Type>();
+		case PrimitiveSurface:
+			return ostr << p.as<Surface_d<2>::Type>();
+		}
+		return ostr;
+	}
+	std::ostream& operator<<( std::ostream& ostr, const PrimitiveBase<3>& p )
+	{
+		switch ( p.getType() ) {
+		case PrimitivePoint:
+			return ostr << p.as<Point_d<3>::Type>();
+		case PrimitiveSegment:
+			return ostr << p.as<Segment_d<3>::Type>();
+		case PrimitiveSurface:
+			return ostr << p.as<Surface_d<3>::Type>();
+		case PrimitiveVolume:
+			return ostr << p.as<Volume_d<3>::Type>();
+		}
+		return ostr;
+	}
+
 	std::ostream& operator<<( std::ostream& ostr, const GeometrySet<2>& g )
 	{
+ 		std::ostream_iterator<PrimitiveBase<2> > out_pt (ostr,", ");
 		ostr << "points: ";
- 		std::ostream_iterator<PrimitivePoint_d<2>::Type > out_pt (ostr,", ");
-		std::copy( g.points().begin(), g.points().end(), out_pt );
+		std::copy( g.primitives_begin( PrimitivePoint ), g.primitives_end(), out_pt );
 		ostr << std::endl << "segments: ";
-		std::ostream_iterator<PrimitiveSegment_d<2>::Type > out_seg (ostr,", ");
-		std::copy( g.segments().begin(), g.segments().end(), out_seg );
+		std::copy( g.primitives_begin( PrimitiveSegment ), g.primitives_end(), out_pt );
 		ostr << std::endl << "surfaces: ";
-		std::ostream_iterator<PrimitiveSurface_d<2>::Type > out_surf (ostr,", ");
-		std::copy( g.surfaces().begin(), g.surfaces().end(), out_surf );
+		std::copy( g.primitives_begin( PrimitiveSurface ), g.primitives_end(), out_pt );
 		ostr << std::endl;
 		return ostr;
 	}
 
 	std::ostream& operator<<( std::ostream& ostr, const GeometrySet<3>& g )
 	{
+ 		std::ostream_iterator<PrimitiveBase<3> > out_pt (ostr,", ");
 		ostr << "points: ";
- 		std::ostream_iterator<PrimitivePoint_d<3>::Type > out_pt (ostr,", ");
-		std::copy( g.points().begin(), g.points().end(), out_pt );
+		std::copy( g.primitives_begin( PrimitivePoint ), g.primitives_end(), out_pt );
 		ostr << std::endl << "segments: ";
-		std::ostream_iterator<PrimitiveSegment_d<3>::Type > out_seg (ostr,", ");
-		std::copy( g.segments().begin(), g.segments().end(), out_seg );
+		std::copy( g.primitives_begin( PrimitiveSegment ), g.primitives_end(), out_pt );
 		ostr << std::endl << "surfaces: ";
-		std::ostream_iterator<PrimitiveSurface_d<3>::Type > out_surf (ostr,", ");
-		std::copy( g.surfaces().begin(), g.surfaces().end(), out_surf );
+		std::copy( g.primitives_begin( PrimitiveSurface ), g.primitives_end(), out_pt );
 		ostr << std::endl << "volumes: ";
-		std::ostream_iterator<PrimitiveVolume_d<3>::Type > out_vol (ostr,", ");
-		std::copy( g.volumes().begin(), g.volumes().end(), out_vol );
+		std::copy( g.primitives_begin( PrimitiveVolume ), g.primitives_end(), out_pt );
 		ostr << std::endl;
 		return ostr;
 	}
@@ -777,6 +799,16 @@ namespace SFCGAL {
 		}
 		// if ( volumeIt != volumeEnd ) {
 		return (T&)*volumeIt;
+	}
+
+	template <int Dim>
+	template <class T>
+	GeometrySet<Dim>::IteratorBase<T>::operator IteratorBase<const T>() const
+	{
+		return IteratorBase<const T>( pointIt, pointEnd,
+					      segmentIt, segmentEnd,
+					      surfaceIt, surfaceEnd,
+					      volumeIt, volumeEnd );
 	}
 
 	template <int Dim>
@@ -890,6 +922,31 @@ namespace SFCGAL {
 	{
 		return it;
 	}
+
+	template <int Dim>
+	size_t GeometrySet<Dim>::size( int selection ) const
+	{
+		if ( selection == -1 ) {
+			return _points.size() + _segments.size() + _surfaces.size() + _volumes.size();
+		}
+		if ( selection == PrimitivePoint ) {
+			return _points.size();
+		}
+		if ( selection == PrimitiveSegment ) {
+			return _segments.size();
+		}
+		if ( selection == PrimitiveSurface ) {
+			return _surfaces.size();
+		}
+		//		if ( selection == PrimitiveVolume ) {
+			return _volumes.size();
+	}
+
+	template class GeometrySet<2>::IteratorBase<const PrimitiveBase<2> >;
+	template class GeometrySet<3>::IteratorBase<const PrimitiveBase<3> >;
+	template class GeometrySet<2>::IteratorBase<PrimitiveBase<2> >;
+	template class GeometrySet<3>::IteratorBase<PrimitiveBase<3> >;
+
 
 	template class GeometrySet<2>;
 	template class GeometrySet<3>;

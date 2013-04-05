@@ -152,6 +152,9 @@ namespace SFCGAL {
 		return ostr;
 	}
 
+	std::ostream& operator<<( std::ostream& ostr, const PrimitiveBase<2>& p );
+	std::ostream& operator<<( std::ostream& ostr, const PrimitiveBase<3>& p );
+
         template <int Dim, class T>
         typename Bbox_d<Dim>::Type computeBbox( const Primitive<Dim, T>& p )
         {
@@ -239,6 +242,9 @@ namespace SFCGAL {
 
 			T& dereference() const;
 
+			// iterator -> const_iterator operator
+			// only defined for iterator
+			operator IteratorBase<const T>() const;
 		private:
 			PointIterator pointIt, pointEnd;
 			SegmentIterator segmentIt, segmentEnd;
@@ -250,6 +256,10 @@ namespace SFCGAL {
 
 		typedef IteratorBase<const PrimitiveBase<Dim> > ConstIterator;
 		typedef IteratorBase<PrimitiveBase<Dim> >       Iterator;
+		typedef ConstIterator const_iterator;
+		typedef Iterator      iterator;
+		typedef const PrimitiveBase<Dim>& const_reference;
+		typedef PrimitiveBase<Dim>&       reference;
 
 		GeometrySet();
 
@@ -356,15 +366,21 @@ namespace SFCGAL {
 		inline VolumeCollection& volumes() { return _volumes; }
 		inline const VolumeCollection& volumes() const { return _volumes; }
 
-		///
-		/// Primitive iterator
-		/// the selection parameter is set to the proper PrimitiveType the caller wants to iterate over
-		/// -1 is passed to iterate over all the different kinds of primitives
+		/**
+		 * Primitive iterator
+		 * the selection parameter is set to the proper PrimitiveType the caller wants to iterate over
+		 * -1 is passed to iterate over all the different kinds of primitives
+		 */
 		ConstIterator primitives_begin( int selection = -1 ) const;
 		ConstIterator primitives_end() const;
 
 		Iterator primitives_begin( int selection = -1 );
 		Iterator primitives_end();
+
+		/**
+		 * STL size() operator
+		 */
+		size_t size( int selection = -1 ) const;
 
 		/**
 		 * STL-compliant insert

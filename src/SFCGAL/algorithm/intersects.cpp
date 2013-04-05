@@ -227,9 +227,9 @@ namespace algorithm
 		
 		GeometrySet<3> points;
 		points.collectPoints( geometry );
-		for ( GeometrySet<3>::PointCollection::const_iterator pit = points.points().begin();
-		      pit != points.points().end(); ++pit ) {
-			if ( is_in_poly( pit->primitive() ) ) {
+		for ( GeometrySet<3>::const_iterator pit = points.primitives_begin( PrimitivePoint );
+		      pit != points.primitives_end(); ++pit ) {
+			if ( is_in_poly( pit->as<Point_d<3>::Type>() ) ) {
 				return true;
 			}
 		}
