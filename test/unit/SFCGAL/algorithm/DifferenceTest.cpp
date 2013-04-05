@@ -116,5 +116,37 @@ BOOST_AUTO_TEST_CASE( testDifferenceXLineString )
 	}
 }
 
+BOOST_AUTO_TEST_CASE( testDifferenceXPolygon )
+{
+	// Point x polygon intersecting
+	BOOST_CHECK( algorithm::difference( Point(0,0), *io::readWkt("POLYGON((0 0,1 0,1 1,0 1,0 0))"))->isEmpty() );
+	// Point x polygon not intersecting
+	BOOST_CHECK( *algorithm::difference( Point(-1,0), *io::readWkt("POLYGON((0 0,1 0,1 1,0 1,0 0))")) == Point(-1, 0) );
+
+	{
+		// a linestring partly cut by a square
+		std::auto_ptr<Geometry> square = io::readWkt("POLYGON((0 0,1 0,1 1,0 1,0 0))");
+		std::auto_ptr<Geometry> ls = io::readWkt("LINESTRING(-1 0,1 0)");
+		std::auto_ptr<Geometry> diff = algorithm::difference( *ls, *square );
+		BOOST_CHECK( *diff == *io::readWkt("LINESTRING(-1 0,0 0)") );
+	}
+	{
+		// a linestring outside a square
+		std::auto_ptr<Geometry> square = io::readWkt("POLYGON((0 0,1 0,1 1,0 1,0 0))");
+		std::auto_ptr<Geometry> ls = io::readWkt("LINESTRING(-2 0,-1 0)");
+		std::auto_ptr<Geometry> diff = algorithm::difference( *ls, *square );
+		BOOST_CHECK( *diff == *ls );
+	}
+	{
+		// a linestring partly inside the hole of a square
+		std::auto_ptr<Geometry> square = io::readWkt("POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,2 8,8 8,8 2,2 2))");
+		std::auto_ptr<Geometry> ls = io::readWkt("LINESTRING(1 1,3 3)");
+		std::auto_ptr<Geometry> diff = algorithm::difference( *ls, *square );
+		BOOST_CHECK( *diff == *io::readWkt("LINESTRING(2 2,3 3)") );
+	}
+
+	{
+	}
+}
 BOOST_AUTO_TEST_SUITE_END()
 

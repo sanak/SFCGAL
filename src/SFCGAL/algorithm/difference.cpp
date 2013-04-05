@@ -20,6 +20,7 @@
  */
 
 #include <CGAL/box_intersection_d.h>
+#include <CGAL/Boolean_set_operations_2.h>
 
 #include <SFCGAL/algorithm/difference.h>
 #include <SFCGAL/algorithm/intersects.h>
@@ -49,6 +50,7 @@ namespace algorithm
 	template <int Dim>
 	static void substract_from_segment( const PrimitiveBase<Dim>& seg, const PrimitiveBase<Dim>& prim, GeometrySet<Dim>& output )
 	{
+		// seg is a segment
 		if ( prim.getType() == PrimitiveSegment ) {
 			const typename Segment_d<Dim>::Type& sega = seg.template as<typename Segment_d<Dim>::Type>();
 			const typename Segment_d<Dim>::Type& segb = prim.template as<typename Segment_d<Dim>::Type>();
@@ -75,6 +77,42 @@ namespace algorithm
 		}
 	}
 
+	static void substract_from_surface( const PrimitiveBase<2>& surf, const PrimitiveBase<2>& prim, GeometrySet<2>& output )
+	{
+		if ( prim.getType() == PrimitiveSurface ) {
+			const Surface_d<2>::Type& poly1 = surf.as<Surface_d<2>::Type>();
+			const Surface_d<2>::Type& poly2 = prim.as<Surface_d<2>::Type>();
+
+			CGAL::difference( poly1, poly2, std::back_inserter( output.surfaces() ) );
+		}
+		else {
+			output.addPrimitive( surf );
+		}
+	}
+
+	static void substract_from_surface( const PrimitiveBase<3>& surf, const PrimitiveBase<3>& prim, GeometrySet<3>& output )
+	{
+#if 0
+		if ( prim.getType() == PrimitiveSurface ) {
+			Surface_d<3>::Type& tri1 = surf.as<Surface_d<3>::Type>();
+			Surface_d<3>::Type& tri2 = prim.as<Surface_d<3>::Type>();
+
+			CGAL::Object interObj = CGAL::intersection( tri1, tri2 );
+			const Surface_d<3>::Type* interTri;
+			const std::vector<Point_d<3>::Type>* interPts;
+
+			CGAL::Polygon_
+			if ( interTri = CGAL::object_cast<Surface_d<3>::Type>( interObj ) ) {
+				// the intersection is a triangle,
+				
+			}
+		}
+		else {
+			output.addPrimitive( surf );
+		}
+#endif
+	}
+
 	template <int Dim>
 	// pa and pb intersects
 	static void difference_primitive( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb, GeometrySet<Dim>& output )
@@ -95,6 +133,9 @@ namespace algorithm
 			else {
 				output.addPrimitive( pa );
 			}
+		}
+		else if ( pa.getType() == PrimitiveSurface ) {
+			substract_from_surface( pa, pb, output );
 		}
 	}
 	
