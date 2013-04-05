@@ -141,6 +141,13 @@ BOOST_AUTO_TEST_CASE( testIntersectionPolygon )
 		LineString ls3( Point(-0.5, 0.0), Point(1.0, -2.0));
 		// a linestring outside
 		BOOST_CHECK(  (algorithm::intersection( ls3, *poly ))->isEmpty() );
+
+		// a linestring partly inside a hole
+		std::auto_ptr<Geometry> square = io::readWkt("POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,2 8,8 8,8 2,2 2))");
+		std::auto_ptr<Geometry> ls = io::readWkt("LINESTRING(1 1,3 3)");
+		std::auto_ptr<Geometry> inter = algorithm::intersection( *ls, *square );
+		BOOST_CHECK( *inter == *io::readWkt("LINESTRING(1 1,2 2)") );
+
 	}
 	// triangle x polygon
 	// TODO

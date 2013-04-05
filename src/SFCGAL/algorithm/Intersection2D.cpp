@@ -115,7 +115,7 @@ namespace algorithm {
 				return;
 			} 
 
-			// if it s a regulat polygon, triangulate it and recurse call
+			// if it s a regular polygon, triangulate it and recurse call
 			GeometrySet<2> triangles, g;
 			triangulate::triangulate( *poly, triangles );
 			g.addPrimitive( pb );
