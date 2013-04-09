@@ -322,6 +322,10 @@ namespace algorithm
 	template <int Dim>
 	bool intersects( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b )
 	{
+		if ( a.complete() || b.complete() ) {
+			// intersection with the whole plane/volume is always true
+			return true;
+		}
 		typename SFCGAL::HandleCollection<Dim>::Type ahandles, bhandles;
 		typename SFCGAL::BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );

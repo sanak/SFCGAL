@@ -105,36 +105,36 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( )
+	GeometrySet<Dim>::GeometrySet( bool isComplete ) : _complete( isComplete )
 	{
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const Geometry& g )
+	GeometrySet<Dim>::GeometrySet( const Geometry& g ) : _complete( false )
 	{
 		_decompose( g );
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename PrimitivePoint_d<Dim>::Type& g )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitivePoint_d<Dim>::Type& g ) : _complete( false )
 	{
 		addPrimitive( g );
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename PrimitiveSegment_d<Dim>::Type& g )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitiveSegment_d<Dim>::Type& g ) : _complete( false )
 	{
 		addPrimitive( g );
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename PrimitiveSurface_d<Dim>::Type& g )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitiveSurface_d<Dim>::Type& g ) : _complete( false )
 	{
 		addPrimitive( g );
 	}
 
 	template <int Dim>
-	GeometrySet<Dim>::GeometrySet( const typename PrimitiveVolume_d<Dim>::Type& g )
+	GeometrySet<Dim>::GeometrySet( const typename PrimitiveVolume_d<Dim>::Type& g ) : _complete( false )
 	{
 		addPrimitive( g );
 	}
@@ -451,6 +451,7 @@ namespace SFCGAL {
 			output.push_back( new Triangle( surfaces.begin()->primitive() ) );
 			return;
 		}
+
 		TriangulatedSurface *tri = new TriangulatedSurface;
 		for ( GeometrySet<3>::SurfaceCollection::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it ) {
 			tri->addTriangle( new Triangle( it->primitive() ) );
@@ -940,6 +941,12 @@ namespace SFCGAL {
 		}
 		//		if ( selection == PrimitiveVolume ) {
 			return _volumes.size();
+	}
+
+	template <int Dim>
+	void GeometrySet<Dim>::merge( const GeometrySet<Dim>& other, int selection )
+	{
+		std::copy( other.primitives_begin( selection ), other.primitives_end(), std::inserter( *this, primitives_end() ) );
 	}
 
 	template class GeometrySet<2>::IteratorBase<const PrimitiveBase<2> >;

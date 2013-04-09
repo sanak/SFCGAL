@@ -21,6 +21,7 @@
 #ifndef _SFCGAL_ENVELOPE_H_
 #define _SFCGAL_ENVELOPE_H_
 
+#include <ostream>
 #include <boost/assert.hpp>
 
 #include <CGAL/Bbox_2.h>

@@ -261,7 +261,11 @@ namespace SFCGAL {
 		typedef const PrimitiveBase<Dim>& const_reference;
 		typedef PrimitiveBase<Dim>&       reference;
 
-		GeometrySet();
+		/**
+		 * Construct a GeometrySet
+		 * If isComplete is set to true, the set represents the whole plane / volume space
+		 */
+		GeometrySet( bool isComplete = false );
 
 		/**
 		 * Construct a GeometrySet from a SFCGAL::Geometry
@@ -308,11 +312,6 @@ namespace SFCGAL {
 		 * add a point to the set
 		 */
 		void addPrimitive( const typename PrimitivePoint_d<Dim>::Type& g );
-		template <class IT>
-		void addPoints( IT ibegin, IT iend )
-		{
-			std::copy( ibegin, iend, std::inserter(_points, _points.end()) );
-		}
 
 		/**
 		 * collect all points of b and add them to the point list
@@ -323,36 +322,28 @@ namespace SFCGAL {
 		 * add a segment to the set
 		 */
 		void addPrimitive( const typename PrimitiveSegment_d<Dim>::Type& g );
-		template <class IT>
-		void addSegments( IT ibegin, IT iend )
-		{
-			std::copy( ibegin, iend, std::inserter(_segments, _segments.end()) );
-		}
 
 		/**
 		 * add a surface to the set
 		 */
 		void addPrimitive( const typename PrimitiveSurface_d<Dim>::Type& g );
-		template <class IT>
-		void addSurfaces( IT ibegin, IT iend )
-		{
-			std::copy( ibegin, iend, std::back_inserter(_surfaces) );
-		}
 
 		/**
 		 * add a volume to the set
 		 */
 		void addPrimitive( const typename PrimitiveVolume_d<Dim>::Type& g );
-		template <class IT>
-		void addVolumes( IT ibegin, IT iend )
-		{
-			std::copy( ibegin, iend, std::back_inserter(_volumes) );
-		}
 
 		/**
 		 * Compute all bounding boxes and handles of the set
 		 */
 		void computeBoundingBoxes( typename HandleCollection<Dim>::Type& handles, typename BoxCollection<Dim>::Type& boxes ) const;
+
+		/**
+		 * Is the current geometry set spans the whole plane/volume ?
+		 */
+		bool complete() const { return _complete; }
+
+		void setComplete( bool complete ) { _complete = complete; }
 
 		inline PointCollection& points() { return _points; }
 		inline const PointCollection& points() const { return _points; }
@@ -365,6 +356,23 @@ namespace SFCGAL {
 
 		inline VolumeCollection& volumes() { return _volumes; }
 		inline const VolumeCollection& volumes() const { return _volumes; }
+
+		template <class IT>
+		void addPoints( IT ibegin, IT iend ) {
+			std::copy( ibegin, iend, std::inserter( _points, _points.end() ) );
+		}
+		template <class IT>
+		void addSegments( IT ibegin, IT iend ) {
+			std::copy( ibegin, iend, std::inserter( _segments, _segments.end() ) );
+		}
+		template <class IT>
+		void addSurfaces( IT ibegin, IT iend ) {
+			std::copy( ibegin, iend, std::back_inserter( _surfaces ) );
+		}
+		template <class IT>
+		void addVolumes( IT ibegin, IT iend ) {
+			std::copy( ibegin, iend, std::back_inserter( _volumes ) );
+		}
 
 		/**
 		 * Primitive iterator
@@ -390,6 +398,11 @@ namespace SFCGAL {
 		ConstIterator insert( ConstIterator it, const PrimitiveBase<Dim>& value );
 
 		/**
+		 * Union operator
+		 */
+		void merge( const GeometrySet<Dim>& other, int selection = -1 );
+
+		/**
 		 * convert the set to a SFCGAL::Geometry
 		 */
 		std::auto_ptr<Geometry> recompose() const;
@@ -409,6 +422,8 @@ namespace SFCGAL {
 		SegmentCollection _segments;
 		SurfaceCollection _surfaces;
 		VolumeCollection _volumes;
+
+		bool _complete;
 	};
 
 	///

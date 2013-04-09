@@ -18,31 +18,25 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SFCGAL_DIFFERENCE_ALGORITHM
-#define SFCGAL_DIFFERENCE_ALGORITHM
 
-#include <memory>
+#include <SFCGAL/Kernel.h>
+#include <SFCGAL/GeometrySet.h>
 
-namespace SFCGAL {
-	class Geometry;
-	template <int Dim> class GeometrySet;
-namespace algorithm {
-	/*
-	 * Difference between two 2D geometries.
-	 */
-	std::auto_ptr<Geometry> difference( const Geometry& ga, const Geometry& gb );
-	
-	/*
-	 * Difference between two 3D geometries.
-	 */
-	std::auto_ptr<Geometry> difference3D( const Geometry& ga, const Geometry& gb );
+#include <CGAL/Boolean_set_operations_2.h>
 
-	/*
-	 * Difference between two geometry sets
-	 */
-	template <int Dim>
-	void difference( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b, GeometrySet<Dim>& output );
-    }
+namespace SFCGAL
+{
+
+typedef std::list<CGAL::Polygon_with_holes_2<Kernel> > PolygonList;
+
+void CGAL_poly_difference( const CGAL::Polygon_2<Kernel> p1, const CGAL::Polygon_2<Kernel> p2, PolygonList& l)
+{
+	CGAL::difference( p1, p2, std::back_inserter( l ) );
 }
 
-#endif
+void CGAL_poly_difference( const CGAL::Polygon_with_holes_2<Kernel> p1, const CGAL::Polygon_with_holes_2<Kernel> p2, GeometrySet<2>::SurfaceCollection& l)
+{
+	CGAL::difference( p1, p2, std::back_inserter( l ) );
+}
+
+}

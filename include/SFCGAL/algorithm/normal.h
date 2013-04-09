@@ -69,6 +69,32 @@ namespace algorithm {
 	} 
 
 	/**
+	 * Returns the 3D normal to a vector of points (supposed to be planar)
+         * @warning exact allows to avoid double rounding at the end of the computation
+	*/
+	template < typename Kernel >
+	CGAL::Vector_3< Kernel > normal3D( const std::vector<CGAL::Point_3<Kernel> >& pts, bool exact = true )
+	{
+		// Newell's formula
+		typename Kernel::FT nx, ny, nz;
+		nx = ny = nz = 0.0;
+		for ( size_t i = 0; i < pts.size(); ++i ) {
+			const Point& pi = pts[i];
+			const Point& pj = pts[ (i+1) % pts.size() ];
+			typename Kernel::FT zi = pi.z() ;
+			typename Kernel::FT zj = pj.z() ;
+			nx += ( pi.y() - pj.y() ) * ( zi + zj );
+			ny += ( zi - zj ) * ( pi.x() + pj.x() );
+			nz += ( pi.x() - pj.x() ) * ( pi.y() + pj.y() );
+		}
+		if ( exact ){
+			return CGAL::Vector_3<Kernel>( nx, ny, nz );
+		}else{
+			return CGAL::Vector_3<Kernel>( CGAL::to_double(nx), CGAL::to_double(ny), CGAL::to_double(nz) );
+		}	
+	} 
+
+	/**
 	 * Returns the 3D normal to a polygon (supposed to be planar).
          * @warning exact allows to avoid double rounding at the end of the computation
 	 */

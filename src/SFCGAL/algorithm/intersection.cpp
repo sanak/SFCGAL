@@ -89,6 +89,16 @@ namespace algorithm
 	template <int Dim>
 	void intersection( const GeometrySet<Dim>& a, const GeometrySet<Dim>& b, GeometrySet<Dim>& output )
 	{
+		if ( a.complete() ) {
+			// intersection with the whole plane/volume is idempotent
+			output = b;
+			return;
+		}
+		if ( b.complete() ) {
+			// intersection with the whole plane/volume is idempotent
+			output = a;
+			return;
+		}
 		typename SFCGAL::HandleCollection<Dim>::Type ahandles, bhandles;
 		typename SFCGAL::BoxCollection<Dim>::Type aboxes, bboxes;
 		a.computeBoundingBoxes( ahandles, aboxes );

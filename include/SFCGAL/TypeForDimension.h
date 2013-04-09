@@ -28,6 +28,8 @@
 #include <CGAL/Polygon_with_holes_2.h>
 #include <CGAL/Polyhedron_3.h>
 
+#include <SFCGAL/Kernel.h>
+
 namespace SFCGAL {
 	///
 	/// Type traits for CGAL types.

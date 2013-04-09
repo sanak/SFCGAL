@@ -75,6 +75,11 @@ namespace SFCGAL {
 		Polygon( const CGAL::Polygon_with_holes_2< Kernel >& poly );
 
 		/**
+		 * Construct a 3D polygon from CGAL::Polygon_with_holes_2<K> an a plane
+		 */
+		Polygon( const CGAL::Polygon_with_holes_2< Kernel >& poly, const CGAL::Plane_3<Kernel>& plane );
+
+		/**
 		 * assign operator
 		 */
 		Polygon& operator = ( const Polygon & other ) ;
