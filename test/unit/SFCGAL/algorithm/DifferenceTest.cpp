@@ -24,6 +24,8 @@
 #include <SFCGAL/algorithm/area.h>
 #include <SFCGAL/Envelope.h>
 #include <SFCGAL/io/GeometryStreams.h>
+#include <SFCGAL/all.h>
+#include <SFCGAL/transform/AffineTransform3.h>
 
 #include <SFCGAL/io/wkt.h>
 
@@ -123,6 +125,14 @@ BOOST_AUTO_TEST_CASE( testDifferenceXLineString )
 		BOOST_CHECK( *diff == *io::readWkt("MULTILINESTRING((0 0,0.3 0),(1 0.4,1 1))") );
 	}
 
+	// a linestring and a surface
+	{
+		std::auto_ptr<Geometry> ls1 = io::readWkt("LINESTRING(0 0,1 0)");
+		std::auto_ptr<Geometry> square2 = io::readWkt("POLYGON((0.5 0,2 0,2 1,0.5 1,0.5 0))");
+		std::auto_ptr<Geometry> diff = algorithm::difference( *ls1, *square2 );
+		BOOST_CHECK( *diff == *io::readWkt("LINESTRING(0 0,0.5 0)") );
+	}
+
 	// check difference(X, linestring) == X, with dimension(X) > 1
 	// TODO: add generators of random geometries to avoid empty geometries here ?
 	std::vector<std::string> typeNames;
@@ -190,6 +200,30 @@ BOOST_AUTO_TEST_CASE( testDifference3DXLineString )
 		std::auto_ptr<Geometry> ls2 = io::readWkt("LINESTRING(0.3 0 1,1 0 1,1 0.4 1)");
 		std::auto_ptr<Geometry> diff = algorithm::difference3D( *ls1, *ls2 );
 		BOOST_CHECK( *diff == *io::readWkt("MULTILINESTRING((0 0 1,0.3 0 1),(1 0.4 1,1 1 1))") );
+	}
+
+	// a linestring and a surface
+	{
+		std::auto_ptr<Geometry> ls1 = io::readWkt("LINESTRING(0 0 1,1 0 1)");
+		std::auto_ptr<Geometry> square2 = io::readWkt("POLYGON((0.5 0 1,2 0 1,2 1 1,0.5 1 1,0.5 0 1))");
+		std::auto_ptr<Geometry> diff = algorithm::difference3D( *ls1, *square2 );
+		BOOST_CHECK( *diff == *io::readWkt("LINESTRING(0 0 1,0.5 0 1)") );
+	}
+
+	// a linestring and a volume
+	{
+		std::auto_ptr<Geometry> ls1 = io::readWkt("LINESTRING(0 0 1,2 0 1)");
+		std::auto_ptr<Geometry> cube2 = io::readWkt("SOLID(("
+							    "((0 0 0,0 1 0,1 1 0,1 0 0,0 0 0))," // front face
+							    "((1 0 0,1 1 0,1 1 1,1 0 1,1 0 0))," // right face
+							    "((0 1 0,0 1 1,1 1 1,1 1 0,0 1 0))," // top face
+							    "((0 0 1,0 1 1,0 1 0,0 0 0,0 0 1))," // left face
+							    "((1 0 1,1 1 1,0 1 1,0 0 1,1 0 1))," // back face
+							    "((1 0 0,1 0 1,0 0 1,0 0 0,1 0 0))" // bottom face
+							    "))");
+
+		std::auto_ptr<Geometry> diff = algorithm::difference3D( *ls1, *cube2 );
+		BOOST_CHECK( *diff == *io::readWkt("LINESTRING(1 0 1,2 0 1)") );
 	}
 
 	// check difference(X, linestring) == X, with dimension(X) > 1
@@ -342,6 +376,82 @@ BOOST_AUTO_TEST_CASE( testDifference3DXPolygon )
 		BOOST_CHECK( diff->envelope() == Envelope( 5, 10, 0, 10, 1, 1 ) );
 		BOOST_CHECK( algorithm::area3D( *diff ) == 50 );
 	}
+
+	{
+		// a surface and a volume
+		std::auto_ptr<Geometry> square1 = io::readWkt("POLYGON((0 0 1,10 0 1,10 10 1,0 10 1,0 0 1))");
+		std::auto_ptr<Geometry> cube2 = io::readWkt("SOLID(("
+							    "((0 0 0,0 1 0,1 1 0,1 0 0,0 0 0))," // front face
+							    "((1 0 0,1 1 0,1 1 1,1 0 1,1 0 0))," // right face
+							    "((0 1 0,0 1 1,1 1 1,1 1 0,0 1 0))," // top face
+							    "((0 0 1,0 1 1,0 1 0,0 0 0,0 0 1))," // left face
+							    "((1 0 1,1 1 1,0 1 1,0 0 1,1 0 1))," // back face
+							    "((1 0 0,1 0 1,0 0 1,0 0 0,1 0 0))" // bottom face
+							    "))");
+		std::auto_ptr<Geometry> diff = algorithm::difference3D( *square1, *cube2 );
+		BOOST_CHECK( diff->envelope() == Envelope( 0, 10, 0, 10, 1, 1 ) );
+		double a = algorithm::area3D( *diff );
+		BOOST_CHECK( (a - 99.0) * (a - 99.0) < 0.001 );
+	}
 }
+
+
+BOOST_AUTO_TEST_CASE( testDifference3DXSolid )
+{
+	std::auto_ptr<Geometry> cube = io::readWkt("SOLID(("
+						   "((0 0 0,0 1 0,1 1 0,1 0 0,0 0 0))," // front face
+						   "((1 0 0,1 1 0,1 1 1,1 0 1,1 0 0))," // right face
+						   "((0 1 0,0 1 1,1 1 1,1 1 0,0 1 0))," // top face
+						   "((0 0 1,0 1 1,0 1 0,0 0 0,0 0 1))," // left face
+						   "((1 0 1,1 1 1,0 1 1,0 0 1,1 0 1))," // back face
+						   "((1 0 0,1 0 1,0 0 1,0 0 0,1 0 0))" // bottom face
+						   "))");
+	// Point - Solid intersecting
+	BOOST_CHECK( algorithm::difference3D( Point(0,0,0), *cube )->isEmpty() );
+	// Point - Solid not intersecting
+	BOOST_CHECK( *algorithm::difference3D( Point(-1,0,0), *cube) == Point(-1, 0, 0) );
+
+	{
+		// linestring - Solid
+		std::auto_ptr<Geometry> ls = io::readWkt("LINESTRING(-1 0 0,0.5 0 0)");
+		BOOST_CHECK( *algorithm::difference3D( *ls, *cube ) == *io::readWkt("LINESTRING(-1 0 0,0 0 0)") );
+
+		// a linestring partly inside the hole of a cube
+		// TODO
+	}
+
+	{
+		// Triangle - Solid
+		std::auto_ptr<Geometry> tri1 = io::readWkt("TRIANGLE((-1 0 0,0.5 0 0,0.5 1 0,-1 0 0))");
+		std::auto_ptr<Geometry> diff = algorithm::difference3D( *tri1, *cube );
+		BOOST_CHECK( *diff == *io::readWkt("TRIANGLE((0/1 2/3 0/1,-1/1 0/1 0/1,0/1 0/1 0/1,0/1 2/3 0/1))") );
+	}
+
+	{
+		// Polygon - Solid
+		std::auto_ptr<Geometry> square = io::readWkt("POLYGON((-1 0 0,0.5 0 0,0.5 1 0,-1 1 0,-1 0 0))");
+		std::auto_ptr<Geometry> diff = algorithm::difference3D( *square, *cube );
+		double ae = algorithm::area3D( *diff ) - 1.0;
+		BOOST_CHECK( ae*ae < 0.001 );
+		BOOST_CHECK( diff->envelope() == Envelope( -1, 0, 0, 1, 0, 0 ) );
+	}
+
+	{
+		// Solid - Solid
+
+		// translation of the cube
+		Solid cube1( cube->as<Solid>() );
+		CGAL::Vector_3<Kernel> tv( CGAL::Point_3<Kernel>( 0.0, 0.0, 0.0 ),
+					   CGAL::Point_3<Kernel>( 0.5, 0.0, 0.0 ));
+		transform::AffineTransform3<Kernel> t( CGAL::Aff_transformation_3<Kernel>( CGAL::Translation(),
+											   tv ));
+		t.transform( cube1 );
+		
+		std::auto_ptr<Geometry> diff = algorithm::difference3D( cube1, *cube );
+		// TODO : implement volume
+		BOOST_CHECK( diff->envelope() == Envelope( 1, 1.5, 0, 1, 0, 1 ) );
+	}
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

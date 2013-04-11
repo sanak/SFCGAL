@@ -20,6 +20,8 @@
  */
 
 #include <CGAL/box_intersection_d.h>
+#include <CGAL/corefinement_operations.h>
+
 #include <SFCGAL/algorithm/difference.h>
 #include <SFCGAL/algorithm/intersects.h>
 #include <SFCGAL/algorithm/intersection.h>
@@ -67,6 +69,7 @@ namespace algorithm
 		return num / den;
 	}
 
+	// prim intersects seg
 	template <int Dim>
 	static void substract_from_segment( const PrimitiveBase<Dim>& seg, const PrimitiveBase<Dim>& prim, GeometrySet<Dim>& output )
 	{
@@ -97,6 +100,7 @@ namespace algorithm
 		}
 	}
 
+	// prim intersects surf
 	static void substract_from_surface( const PrimitiveBase<2>& surf, const PrimitiveBase<2>& prim, GeometrySet<2>& output )
 	{
 		if ( prim.getType() == PrimitiveSurface ) {
@@ -110,45 +114,28 @@ namespace algorithm
 		}
 	}
 
+	// prim intersects surf and they share a common plane
 	static void substract_from_surface( const PrimitiveBase<3>& surf, const PrimitiveBase<3>& prim, GeometrySet<3>& output )
 	{
 		if ( prim.getType() == PrimitiveSurface ) {
 			const CGAL::Triangle_3<Kernel>& tri1 = surf.as<Surface_d<3>::Type>();
 			const CGAL::Triangle_3<Kernel>& tri2 = prim.as<Surface_d<3>::Type>();
 
-			// compute the intersection and process it if its a surface
-			// FIXME: replace by intersectionDimension ?
-			CGAL::Object interObj = CGAL::intersection( tri1, tri2 );
-			const Surface_d<3>::Type* interTri;
-			const std::vector<Point_d<3>::Type>* interPts;
-
 			// common plane
 			CGAL::Plane_3<Kernel> plane = tri1.supporting_plane();
-			CGAL::Polygon_2<Kernel> poly1, interPoly;
-			if ( (interTri = CGAL::object_cast<Surface_d<3>::Type>( &interObj )) ) {
-				// the intersection is a triangle and shares a plane with A
-				interPoly.push_back( plane.to_2d( interTri->vertex(0) ) );
-				interPoly.push_back( plane.to_2d( interTri->vertex(1) ) );
-				interPoly.push_back( plane.to_2d( interTri->vertex(2) ) );
-			}
-			else if ( (interPts = CGAL::object_cast<std::vector<Point_d<3>::Type> >( &interObj )) ) {
-				// the intersection is a polygon that shares a plane with A;
-				for ( size_t i = 0; i < interPts->size(); ++i ) {
-					interPoly.push_back( plane.to_2d( (*interPts)[i] ) );
-				}
-			}
-			else {
-				// nothing to get off, add A
-				output.addPrimitive( surf );
-				return;
-			}
+
+			CGAL::Polygon_2<Kernel> poly1, poly2;
 
 			poly1.push_back( plane.to_2d( tri1.vertex(0) ) );
 			poly1.push_back( plane.to_2d( tri1.vertex(1) ) );
 			poly1.push_back( plane.to_2d( tri1.vertex(2) ) );
 
+			poly2.push_back( plane.to_2d( tri2.vertex(0) ) );
+			poly2.push_back( plane.to_2d( tri2.vertex(1) ) );
+			poly2.push_back( plane.to_2d( tri2.vertex(2) ) );
+
 			PolygonList polys;
-			CGAL_poly_difference( poly1, interPoly, polys );
+			CGAL_poly_difference( poly1, poly2, polys );
 
 			for ( PolygonList::const_iterator it = polys.begin();
 			      it != polys.end();
@@ -163,6 +150,59 @@ namespace algorithm
 		}
 	}
 
+	static void substract_from_volume( const PrimitiveBase<2>& vol, const PrimitiveBase<2>& prim, GeometrySet<2>& output )
+	{
+	}
+
+	static void substract_from_volume( const PrimitiveBase<3>& vol, const PrimitiveBase<3>& prim, GeometrySet<3>& output )
+	{
+		if ( prim.getType() == PrimitiveVolume ) {
+			const MarkedPolyhedron& vol1 = vol.as<Volume_d<3>::Type>();
+			const MarkedPolyhedron& vol2 = prim.as<Volume_d<3>::Type>();
+
+			typedef CGAL::Polyhedron_corefinement<MarkedPolyhedron> Corefinement;
+			MarkedPolyhedron& polya = const_cast<MarkedPolyhedron&>( vol1 );
+			MarkedPolyhedron& polyb = const_cast<MarkedPolyhedron&>( vol2 );
+
+			Corefinement coref;
+			CGAL::Emptyset_iterator no_polylines;
+			// vector of <Polyhedron, tag>
+			std::vector<std::pair<MarkedPolyhedron*, int> > result;
+			coref( polya, polyb, no_polylines, std::back_inserter(result), Corefinement::P_minus_Q_tag );
+
+			// empty intersection
+			if (result.size() == 0) {
+				return ;
+			}
+			
+			// else, we have an intersection
+			MarkedPolyhedron* res_poly = result[0].first;
+			output.addPrimitive( *res_poly );
+			delete res_poly;
+		}
+		else {
+			output.addPrimitive( vol );
+		}
+	}
+
+	template <int Dim>
+	static void substract_from_primitive( const PrimitiveBase<Dim>& a, const PrimitiveBase<Dim>& b, GeometrySet<Dim>& output )
+	{
+		switch ( a.getType() ) {
+		case PrimitivePoint:
+			break;
+		case PrimitiveSegment:
+			substract_from_segment( a, b, output );
+			break;
+		case PrimitiveSurface:
+			substract_from_surface( a, b, output );
+			break;
+		case PrimitiveVolume:
+			substract_from_volume( a, b, output );
+			break;
+		}
+	}
+
 	template <int Dim>
 	// pa and pb intersects
 	static void difference_primitive( const PrimitiveBase<Dim>& pa, const PrimitiveBase<Dim>& pb, GeometrySet<Dim>& output )
@@ -170,22 +210,28 @@ namespace algorithm
 		if ( pa.getType() == PrimitivePoint ) {
 			// difference = empty
 		}
-		else if ( pa.getType() == PrimitiveSegment ) {
+		else {
+			int paType = pa.getType();
+
 			GeometrySet<Dim> inter;
 			algorithm::intersection( pa, pb, inter );
-			if ( inter.size( PrimitiveSegment ) > 0 ) {
-				for ( typename GeometrySet<Dim>::const_iterator it = inter.primitives_begin( PrimitiveSegment );
+
+			// FIXME replace by intersectionDim ?
+			if ( inter.size( paType ) > 0 ) {
+				GeometrySet<Dim> temp( /* isComplete */ true );
+				for ( typename GeometrySet<Dim>::const_iterator it = inter.primitives_begin( paType );
 				      it != inter.primitives_end();
 				      ++it ) {
-					substract_from_segment( pa, *it, output );
+					GeometrySet<Dim> temp2, temp3;
+					substract_from_primitive( pa, *it, temp2 );
+					algorithm::intersection( temp, temp2, temp3 );
+					temp = temp3;
 				}
+				output.merge( temp, paType );
 			}
 			else {
 				output.addPrimitive( pa );
 			}
-		}
-		else if ( pa.getType() == PrimitiveSurface ) {
-			substract_from_surface( pa, pb, output );
 		}
 	}
 	

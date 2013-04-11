@@ -57,7 +57,7 @@ PolyhedralSurface::PolyhedralSurface( PolyhedralSurface const& other ) :
 ///
 ///
 ///
-PolyhedralSurface::PolyhedralSurface( const MarkedPolyhedron& poly ) :
+	PolyhedralSurface::PolyhedralSurface( const MarkedPolyhedron& poly, bool simplify ) :
 	Surface()
 {
 	for ( MarkedPolyhedron::Facet_const_iterator fit = poly.facets_begin(); fit != poly.facets_end(); ++fit ) {
@@ -71,6 +71,9 @@ PolyhedralSurface::PolyhedralSurface( const MarkedPolyhedron& poly ) :
 		face->addPoint( hit->vertex()->point() );
 		_polygons.push_back( new Polygon( face ) );
 	}
+
+	// TODO Implement simplification
+	// based on std::map<Plane_3, list<Edge> > ?
 }
 
 ///

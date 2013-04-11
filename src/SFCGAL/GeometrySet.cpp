@@ -90,7 +90,7 @@ namespace SFCGAL {
 			const Triangle& tri = surf.triangleN( i );
 			surfaces.push_back( CGAL::Triangle_3<Kernel>( tri.vertex(0).toPoint_3(),
 								      tri.vertex(1).toPoint_3(),
-									      tri.vertex(2).toPoint_3() )
+								      tri.vertex(2).toPoint_3() )
 					    );
 		}
 	}
@@ -178,12 +178,11 @@ namespace SFCGAL {
 		else if ( const std::vector<TPoint> * pts = CGAL::object_cast<std::vector<TPoint> >( &o ) ) {
 			if ( pointsAsRing ) {
 				// if pointsAsRing is true, build a polygon out of points
-				// FIXME : we use triangulation here, which is not needed
-				// We should have created a (planar) Polyhedron directly out of the points
 				LineString ls;
 				for ( size_t i = 0; i < pts->size(); ++i ) {
 					ls.addPoint( (*pts)[i] );
 				}
+				ls.addPoint( (*pts)[0] );
 				Polygon poly(ls);
 				_decompose_polygon( poly, _surfaces, dim_t<3>() );
 			}
@@ -219,6 +218,7 @@ namespace SFCGAL {
 				for ( size_t i = 0; i < pts->size(); ++i ) {
 					poly.push_back( (*pts)[i] );
 				}
+				poly.push_back( (*pts)[0] );
 				CGAL::Polygon_with_holes_2<Kernel> polyh( poly );
 				_surfaces.push_back( polyh );
 			}

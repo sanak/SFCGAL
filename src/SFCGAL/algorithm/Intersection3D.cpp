@@ -141,9 +141,6 @@ namespace algorithm {
 		CGAL::internal::extract_connected_components( polyb, criterion, std::back_inserter(decomposition));
 
 		for ( std::list<MarkedPolyhedron>::iterator it = decomposition.begin(); it != decomposition.end(); ++it ) {
-			std::ofstream decompo("decompo.off");
-			decompo << *it;
-
 			// take a point on the component and tests if its inside the other polyhedron
 			//
 			CGAL::Point_3<Kernel> test_point;
@@ -201,8 +198,24 @@ namespace algorithm {
 			
 			if ( point_is_inside ) {
 				// we know it is a planar intersection
-				output.addPrimitive( PrimitiveVolume_d<3>::Type(*it, FLAG_IS_PLANAR) );
-				return;
+				//				output.addPrimitive( PrimitiveVolume_d<3>::Type(*it, FLAG_IS_PLANAR) );
+
+				// the decomposition should return triangles
+				BOOST_ASSERT( it->is_pure_triangle() );
+
+				for ( MarkedPolyhedron::Facet_const_iterator fit = it->facets_begin();
+				      fit != it->facets_end();
+				      ++fit ) {
+					int i = 0;
+					CGAL::Point_3<Kernel> vertex[3];
+					MarkedPolyhedron::Halfedge_around_facet_const_circulator circ = fit->facet_begin();
+					do {
+						vertex[i] = circ->vertex()->point();
+						++circ;
+						++i;
+					} while ( circ != fit->facet_begin() );
+					output.addPrimitive( CGAL::Triangle_3<Kernel>( vertex[0], vertex[1], vertex[2] ) );
+				}
 			}
 		}
 
@@ -270,7 +283,7 @@ namespace algorithm {
 			else if ( pb.getType() == PrimitiveSurface ) {
 				const CGAL::Triangle_3<Kernel>& tri2 = pb.as<Surface_d<3>::Type>();
 				CGAL::Object interObj = CGAL::intersection( tri1, tri2 );
-				output.addPrimitive( interObj );
+				output.addPrimitive( interObj, /* pointsAsRing */ true );
 			}
 		}
 		else if ( pa.getType() == PrimitiveVolume ) {

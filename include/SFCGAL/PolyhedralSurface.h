@@ -57,8 +57,9 @@ namespace SFCGAL {
 		PolyhedralSurface( const std::vector< Polygon > & polygons ) ;
 		/**
 		 * Constructor from a CGAL::Polyhedron_3
+		 * if simplify is set, only border edges are retained
 		 */
-		PolyhedralSurface( const MarkedPolyhedron& poly );
+		PolyhedralSurface( const MarkedPolyhedron& poly, bool simplify = false );
 		/**
 		 * Copy constructor
 		 */
