@@ -170,12 +170,12 @@ namespace algorithm
 			std::vector<std::pair<MarkedPolyhedron*, int> > result;
 			coref( polya, polyb, no_polylines, std::back_inserter(result), Corefinement::P_minus_Q_tag );
 
-			// empty intersection
+			// empty difference
 			if (result.size() == 0) {
 				return ;
 			}
 			
-			// else, we have an intersection
+			// else, we have a difference
 			MarkedPolyhedron* res_poly = result[0].first;
 			output.addPrimitive( *res_poly );
 			delete res_poly;

@@ -514,8 +514,7 @@ namespace SFCGAL {
 				}
 			}
 			else {
-				
-				PolyhedralSurface *shell = new PolyhedralSurface( vit->primitive() );
+				PolyhedralSurface *shell = new PolyhedralSurface( vit->primitive(), /* simplfiy */ true );
 				// TODO: test open / closed
 				output.push_back( new Solid( shell ) );
 			}

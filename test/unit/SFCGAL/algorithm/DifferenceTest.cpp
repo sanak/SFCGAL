@@ -395,7 +395,6 @@ BOOST_AUTO_TEST_CASE( testDifference3DXPolygon )
 	}
 }
 
-
 BOOST_AUTO_TEST_CASE( testDifference3DXSolid )
 {
 	std::auto_ptr<Geometry> cube = io::readWkt("SOLID(("
@@ -448,8 +447,7 @@ BOOST_AUTO_TEST_CASE( testDifference3DXSolid )
 		t.transform( cube1 );
 		
 		std::auto_ptr<Geometry> diff = algorithm::difference3D( cube1, *cube );
-		// TODO : implement volume
-		BOOST_CHECK( diff->envelope() == Envelope( 1, 1.5, 0, 1, 0, 1 ) );
+		BOOST_CHECK( *diff == *io::readWkt("SOLID((((1 1 0,1 1 1,1.5 1 1,1.5 1 0)),((1.5 1 1,1.5 -0 1,1.5 0 0,1.5 1 0)),((1 1 0,1 0 0,1 0 1,1 1 1)),((1.5 1 0,1.5 0 0,1 0 0,1 1 0)),((1.5 1 1,1 1 1,1 0 1,1.5 -0 1)),((1.5 -0 1,1 0 1,1 0 0,1.5 0 0))))") );
 	}
 }
 
