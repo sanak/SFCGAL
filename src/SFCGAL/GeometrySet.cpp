@@ -140,6 +140,27 @@ namespace SFCGAL {
 	}
 
 	template <int Dim>
+	int GeometrySet<Dim>::maximumDimension() const
+	{
+		if ( _complete ) {
+			return Dim;
+		}
+		if ( ! _volumes.empty() ) {
+			return 3;
+		}
+		if ( ! _surfaces.empty() ) {
+			return 2;
+		}
+		if ( ! _segments.empty() ) {
+			return 1;
+		}
+		if ( ! _points.empty() ) {
+			return 0;
+		}
+		return -1;
+	}
+
+	template <int Dim>
 	void GeometrySet<Dim>::addGeometry( const Geometry& g )
 	{
 		_decompose( g );

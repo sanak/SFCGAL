@@ -293,6 +293,10 @@ namespace SFCGAL {
 		GeometrySet( const typename PrimitiveVolume_d<Dim>::Type& g );
 
 		/**
+		 * Get the maximum dimension (-1 for empty)
+		 */
+		int maximumDimension() const;
+		/**
 		 * Add a geometry by decomposing it into CGAL primitives
 		 */
 		void addGeometry( const Geometry& g );
