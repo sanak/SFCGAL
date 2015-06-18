@@ -1,4 +1,3 @@
-# fake edit to trigger travis
 cmake_minimum_required( VERSION 2.8 )
 project( SFCGAL )
 
